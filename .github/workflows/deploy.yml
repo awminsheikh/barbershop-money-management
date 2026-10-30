@@ -24,6 +24,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # The starting admin and owner logins come from repository secrets; only salted hashes reach the site.
+      - name: Hash the starting accounts
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          OWNER_USERNAME: ${{ secrets.OWNER_USERNAME }}
+          OWNER_PASSWORD: ${{ secrets.OWNER_PASSWORD }}
+        run: |
+          accounts="$(node scripts/seed-accounts.mjs)"
+          echo "NEXT_PUBLIC_SEED_ACCOUNTS=$accounts" >> "$GITHUB_ENV"
       - run: npm run build
         env:
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}

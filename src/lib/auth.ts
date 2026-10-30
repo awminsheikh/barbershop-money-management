@@ -55,6 +55,23 @@ export async function setupAccounts(
   return null;
 }
 
+// Accounts baked into the build by the deploy workflow (hashes only), so no phone needs a setup step.
+function buildAccounts(): Omit<User, "id">[] {
+  try {
+    const parsed = JSON.parse(process.env.NEXT_PUBLIC_SEED_ACCOUNTS || "[]");
+    return Array.isArray(parsed) && parsed.length === 2 ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export const hasBuildAccounts = () => buildAccounts().length === 2;
+
+export async function seedBuildAccounts() {
+  if ((await db.users.count()) > 0) return;
+  await db.users.bulkAdd(buildAccounts());
+}
+
 // Development only: ready-made accounts so every screen can be tried without the setup step.
 export async function ensureDemoUsers() {
   if ((await db.users.count()) > 0) return;

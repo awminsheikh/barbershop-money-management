@@ -61,8 +61,16 @@ Settings, Sample data, fills every screen with a few months of made-up customers
 
 ## Login
 
-The first time the app opens it asks for two accounts: an admin and the barbershop owner. Both are created on the
-phone by whoever installs it, then the phone goes to the owner. Each user can change their own username and password
+Both accounts (an admin and the barbershop owner) come with the deployed site, so a phone that opens the app goes
+straight to the login screen. Their usernames and passwords are set once as GitHub repository secrets
+(`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `OWNER_USERNAME`, `OWNER_PASSWORD`, under Settings, Secrets and variables,
+Actions). The deploy workflow turns them into salted hashes with `scripts/seed-accounts.mjs` and builds only the
+hashes into the site; the passwords are never in the repo or the page. Use long passwords, since the hashes are
+visible to anyone who reads the site's code. Without the secrets the app falls back to a first-run setup screen
+that asks for both accounts on the phone.
+
+A username or password changed under Account only changes it on that phone; another phone starts from the
+secrets again. Each user can change their own username and password
 under More, Account. Only the admin sees the Users page, where the owner's login can be reset if it is forgotten. The
 owner's screens never mention the admin account, and the accounts are kept out of backups so backup files do not reveal it.
 

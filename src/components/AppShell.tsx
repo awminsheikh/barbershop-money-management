@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { AuthContext } from "@/lib/auth-context";
-import { clearSession, ensureDemoUsers, readSession, saveSession } from "@/lib/auth";
+import { clearSession, ensureDemoUsers, hasBuildAccounts, readSession, saveSession, seedBuildAccounts } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { generateRecurring } from "@/lib/recurring";
 import { loadDemoData } from "@/lib/seed";
@@ -38,6 +38,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Ask the browser not to evict his data when storage is tight.
     navigator.storage?.persist?.().catch(() => {});
+    // The accounts that came with the build; a phone that has none yet gets them silently.
+    if (hasBuildAccounts()) seedBuildAccounts();
     // Development only: the first time a browser opens the app it gets sample data. A flag in localStorage
     // (which "wipe everything" leaves alone) keeps it from coming back after he deletes it.
     if (process.env.NODE_ENV !== "production") {
@@ -46,7 +48,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         loadDemoData();
       }
       // Development accounts: admin / admin123 and owner / owner123.
-      if (!localStorage.getItem("demoUsers")) {
+      if (!hasBuildAccounts() && !localStorage.getItem("demoUsers")) {
         localStorage.setItem("demoUsers", "1");
         ensureDemoUsers();
       }
@@ -62,8 +64,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [signedIn]);
 
   const developing = process.env.NODE_ENV !== "production";
-  const waitingForDemoUsers = developing && userCount === 0 && typeof window !== "undefined" && !localStorage.getItem("demoUsers");
-  if (!settings.ready || userCount === undefined || user === undefined || waitingForDemoUsers) return <div className="min-h-dvh" />;
+  const waitingForAccounts =
+    userCount === 0 &&
+    typeof window !== "undefined" &&
+    (hasBuildAccounts() || (developing && !localStorage.getItem("demoUsers")));
+  if (!settings.ready || userCount === undefined || user === undefined || waitingForAccounts) return <div className="min-h-dvh" />;
   if (userCount === 0) return <SetupScreen />;
   if (!user) {
     return (
