@@ -15,10 +15,12 @@ import { Button, Chip, Field, inputClass } from "./ui";
 export function BookingForm({
   appointment,
   defaultDate,
+  defaultMinutes,
   onDone,
 }: {
   appointment?: Appointment;
   defaultDate: Date;
+  defaultMinutes?: number;
   onDone: () => void;
 }) {
   const settings = useSettings();
@@ -28,7 +30,7 @@ export function BookingForm({
   const initialDate = appointment ? new Date(appointment.start) : defaultDate;
   const [date, setDate] = useState(startOfDay(initialDate));
   const [minutes, setMinutes] = useState<number | undefined>(
-    appointment ? initialDate.getHours() * 60 + initialDate.getMinutes() : undefined,
+    appointment ? initialDate.getHours() * 60 + initialDate.getMinutes() : defaultMinutes,
   );
   const [customerId, setCustomerId] = useState(appointment?.customerId);
   const [serviceIds, setServiceIds] = useState<number[]>(appointment?.serviceIds ?? []);
@@ -112,7 +114,11 @@ export function BookingForm({
           setCalendar(false);
         }}
       />
-      {dayOff && <p className="text-sm text-bad">این روز جزو روزهای کاری شما نیست.</p>}
+      {dayOff && (
+        <p className="rounded-xl border border-brand bg-brand-soft p-3 text-sm">
+          این روز تعطیل است، اما می‌توانید برایش نوبت ثبت کنید.
+        </p>
+      )}
 
       <div>
         <div className="mb-1 text-sm text-muted">ساعت</div>

@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { dayRange } from "./date";
 import type { Appointment, Expense, PaymentMethod, Sale } from "./types";
-import { saleSubtotal, saleTotal } from "./types";
+import { isProductItem, saleKind, saleSubtotal, saleTotal } from "./types";
 
 // Moves stock for every product line of a sale: sign -1 when selling, +1 when voiding.
 async function moveStock(items: Sale["items"], sign: 1 | -1) {
@@ -51,8 +51,12 @@ export async function findConflicts(start: number, durationMin: number, excludeI
 }
 
 export interface Summary {
+  // Service visits (a product-only sale is not a visit).
   visits: number;
+  productSales: number;
   income: number;
+  serviceIncome: number;
+  productIncome: number;
   vat: number;
   tips: number;
   discounts: number;
@@ -60,45 +64,67 @@ export interface Summary {
   profit: number;
   byMethod: Record<PaymentMethod, number>;
   byService: { name: string; amount: number }[];
+  byProduct: { name: string; amount: number }[];
 }
+
+const ranked = (m: Map<string, number>) =>
+  [...m.entries()].map(([name, amount]) => ({ name, amount })).sort((a, b) => b.amount - a.amount);
 
 export function summarize(sales: Sale[], expenses: Expense[]): Summary {
   const live = sales.filter((s) => !s.voided);
   const byMethod: Record<PaymentMethod, number> = { cash: 0, card: 0, transfer: 0 };
   const services = new Map<string, number>();
-  let income = 0;
+  const products = new Map<string, number>();
+  let visits = 0;
+  let productSales = 0;
+  let serviceIncome = 0;
+  let productIncome = 0;
   let vat = 0;
   let tips = 0;
   let discounts = 0;
   for (const s of live) {
     const total = saleTotal(s);
+    const kind = saleKind(s);
+    if (kind === "service") visits += 1;
+    else productSales += 1;
     // VAT is collected for the state, so it is not part of income; it still moves through the till.
-    income += total - (s.vat ?? 0);
     vat += s.vat ?? 0;
     tips += s.tip;
     discounts += s.discount;
     byMethod[s.method] += total;
-    // Discount is spread over items proportionally so per-service totals add up to income minus tips.
+    // Discount is spread over items proportionally so per-item totals add up to income minus tips.
+    // A tip belongs to the kind of sale it was given on.
+    if (kind === "product") productIncome += s.tip;
+    else serviceIncome += s.tip;
     const subtotal = saleSubtotal(s);
     for (const item of s.items) {
       const gross = item.price * item.qty;
       const share = subtotal > 0 ? gross - (s.discount * gross) / subtotal : gross;
-      services.set(item.name, (services.get(item.name) ?? 0) + share);
+      if (kind === "product" || isProductItem(item)) {
+        productIncome += share;
+        products.set(item.name, (products.get(item.name) ?? 0) + share);
+      } else {
+        serviceIncome += share;
+        services.set(item.name, (services.get(item.name) ?? 0) + share);
+      }
     }
   }
+  const income = serviceIncome + productIncome;
   const spent = expenses.reduce((sum, e) => sum + e.amount, 0);
   return {
-    visits: live.length,
+    visits,
+    productSales,
     income,
+    serviceIncome,
+    productIncome,
     vat,
     tips,
     discounts,
     expenses: spent,
     profit: income - spent,
     byMethod,
-    byService: [...services.entries()]
-      .map(([name, amount]) => ({ name, amount }))
-      .sort((a, b) => b.amount - a.amount),
+    byService: ranked(services),
+    byProduct: ranked(products),
   };
 }
 

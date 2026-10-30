@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { Icon } from "./Icon";
 
 type Variant = "primary" | "secondary" | "danger" | "ghost";
 
@@ -159,6 +160,42 @@ export function Stat({ label, value, tone }: { label: string; value: string; ton
       <div className={`mt-1 text-lg font-bold ${tone === "good" ? "text-good" : tone === "bad" ? "text-bad" : ""}`}>
         {value}
       </div>
+    </div>
+  );
+}
+
+// Previous / next with a label between. In RTL "previous" sits on the right and points right, "next" on the left.
+export function DateStepper({
+  label,
+  onPrev,
+  onNext,
+  onLabel,
+  nextDisabled,
+  prevDisabled,
+}: {
+  label: string;
+  onPrev: () => void;
+  onNext: () => void;
+  onLabel?: () => void;
+  nextDisabled?: boolean;
+  prevDisabled?: boolean;
+}) {
+  const side = "flex min-h-12 min-w-12 items-center justify-center rounded-xl border border-line bg-card active:opacity-70 disabled:opacity-30";
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <button type="button" className={side} onClick={onPrev} disabled={prevDisabled} aria-label="قبلی">
+        <Icon name="chevron" className="h-5 w-5 rotate-180" />
+      </button>
+      {onLabel ? (
+        <button type="button" className="min-h-12 flex-1 rounded-xl border border-line bg-card px-2 font-semibold" onClick={onLabel}>
+          {label}
+        </button>
+      ) : (
+        <div className="flex min-h-12 flex-1 items-center justify-center font-semibold">{label}</div>
+      )}
+      <button type="button" className={side} onClick={onNext} disabled={nextDisabled} aria-label="بعدی">
+        <Icon name="chevron" className="h-5 w-5" />
+      </button>
     </div>
   );
 }

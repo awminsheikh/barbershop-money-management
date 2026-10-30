@@ -6,13 +6,12 @@ import { AmountInput } from "@/components/AmountInput";
 import { BirthdayBanner } from "@/components/BirthdayBanner";
 import { DayCloseSheet } from "@/components/DayCloseSheet";
 import { Icon } from "@/components/Icon";
-import { Logo } from "@/components/Logo";
 import { WeekChart } from "@/components/WeekChart";
 import { AppointmentsPanel } from "@/components/AppointmentsPanel";
 import { SaleForm } from "@/components/SaleForm";
 import { Button, Sheet, Stat } from "@/components/ui";
 import { db } from "@/lib/db";
-import { dayRange, formatDate, toFa } from "@/lib/date";
+import { dayRange, toFa } from "@/lib/date";
 import { useExpenseCategories, useProducts, useSummary } from "@/lib/hooks";
 import { formatMoney } from "@/lib/money";
 import { useSettings } from "@/lib/settings";
@@ -84,7 +83,7 @@ function QuickExpense({ onDone }: { onDone: () => void }) {
 }
 
 export default function HomePage() {
-  const { unit, shopName } = useSettings();
+  const { unit } = useSettings();
   const now = new Date();
   const { from, to } = dayRange(now);
   const summary = useSummary(from, to);
@@ -92,21 +91,6 @@ export default function HomePage() {
 
   return (
     <>
-      <header className="mb-5 flex items-center gap-3">
-        <Logo className="h-12 w-auto shrink-0" />
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-lg font-bold leading-tight">{shopName || "الماس"}</h1>
-          <div className="text-sm text-muted">{formatDate(now)}</div>
-        </div>
-        <Link
-          href="/profile/"
-          aria-label="پروفایل"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-card text-accent active:opacity-70"
-        >
-          <Icon name="user" className="h-5 w-5" />
-        </Link>
-      </header>
-
       <BackupBanner />
       <LowStockBanner />
       <BirthdayBanner />
@@ -119,11 +103,14 @@ export default function HomePage() {
       <section className="mb-6">
         <h2 className="mb-2 font-semibold">حساب امروز</h2>
         <div className="grid grid-cols-2 gap-3">
-          <Stat label="مشتری امروز" value={toFa(summary.visits)} />
+          <Stat label="مشتری امروز (خدمات)" value={toFa(summary.visits)} />
           <Stat label="درآمد" value={formatMoney(summary.income, unit)} tone="good" />
           <Stat label="هزینه" value={formatMoney(summary.expenses, unit)} tone="bad" />
           <Stat label="سود" value={formatMoney(summary.profit, unit)} tone={summary.profit < 0 ? "bad" : "good"} />
         </div>
+        <p className="mt-2 text-sm text-muted">
+          درآمد خدمات {formatMoney(summary.serviceIncome, unit)} · فروش محصول {formatMoney(summary.productIncome, unit)} ({toFa(summary.productSales)} فروش)
+        </p>
       </section>
 
       <section className="mb-6">
@@ -131,7 +118,7 @@ export default function HomePage() {
       </section>
 
       <div className="grid grid-cols-2 gap-3">
-        <Button onClick={() => setSheet("sale")}>+ فروش سریع</Button>
+        <Button onClick={() => setSheet("sale")}>+ فروش محصول</Button>
         <Button variant="secondary" onClick={() => setSheet("expense")}>
           + هزینه
         </Button>
@@ -142,8 +129,8 @@ export default function HomePage() {
       </Button>
 
       <DayCloseSheet open={sheet === "close"} onClose={() => setSheet(null)} />
-      <Sheet open={sheet === "sale"} title="فروش سریع" onClose={() => setSheet(null)}>
-        <SaleForm onDone={() => setSheet(null)} />
+      <Sheet open={sheet === "sale"} title="فروش محصول" onClose={() => setSheet(null)}>
+        <SaleForm kind="product" onDone={() => setSheet(null)} />
       </Sheet>
       <Sheet open={sheet === "expense"} title="هزینه جدید" onClose={() => setSheet(null)}>
         <QuickExpense onDone={() => setSheet(null)} />

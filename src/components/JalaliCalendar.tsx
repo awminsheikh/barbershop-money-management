@@ -3,7 +3,7 @@
 import { jalaaliMonthLength } from "jalaali-js";
 import { useState } from "react";
 import { fromJ, formatMonth, isSameDay, toFa, toJ, weekdayIndex, WEEKDAYS_SHORT } from "@/lib/date";
-import { Sheet } from "./ui";
+import { DateStepper, Sheet } from "./ui";
 
 // Month grid in the Jalali calendar, weeks starting on Saturday.
 export function JalaliCalendar({
@@ -32,15 +32,7 @@ export function JalaliCalendar({
 
   return (
     <Sheet open={open} title="انتخاب تاریخ" onClose={onClose}>
-      <div className="flex items-center justify-between">
-        <button type="button" className="min-h-11 min-w-11 text-xl" onClick={() => shift(-1)} aria-label="ماه قبل">
-          ›
-        </button>
-        <div className="font-semibold">{formatMonth(view.jy, view.jm)}</div>
-        <button type="button" className="min-h-11 min-w-11 text-xl" onClick={() => shift(1)} aria-label="ماه بعد">
-          ‹
-        </button>
-      </div>
+      <DateStepper label={formatMonth(view.jy, view.jm)} onPrev={() => shift(-1)} onNext={() => shift(1)} />
       <div className="grid grid-cols-7 gap-1 text-center text-sm">
         {WEEKDAYS_SHORT.map((w) => (
           <div key={w} className="py-1 text-muted">

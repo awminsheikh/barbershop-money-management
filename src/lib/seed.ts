@@ -138,21 +138,33 @@ export async function loadDemoData(): Promise<SeedResult> {
       const main = pick(rand, Object.entries(SERVICE_WEIGHT).map(([id, w]): [number, number] => [Number(id), w]));
       const items = [item(main)];
       if ((main === 1 || main === 2) && rand() < 0.2) items.push(item(main === 1 ? 2 : 1));
-      if (rand() < 0.08) {
-        const p = PRODUCTS[Math.floor(rand() * PRODUCTS.length)];
-        items.push({ productId: p.id, name: p.name, price: p.price, qty: 1 });
-      }
       const subtotal = items.reduce((t, i) => t + i.price * i.qty, 0);
       const discount = rand() < 0.06 ? Math.round((subtotal * 0.1) / 100_000) * 100_000 : 0;
       const tip = rand() < 0.12 ? (rand() < 0.5 ? T(50_000) : T(100_000)) : 0;
-      drafts.push({ date, customerId, items, discount, tip, deposit: 0, method: pick(rand, PAYMENT_MIX), voided: false });
+      drafts.push({ date, kind: "service", customerId, items, discount, tip, deposit: 0, method: pick(rand, PAYMENT_MIX), voided: false });
+    }
+    // Product sales are separate records: now and then a customer (or a walk-in) buys something.
+    if (rand() < 0.35) {
+      const when = new Date(day);
+      when.setHours(pick(rand, PEAK_HOURS), Math.floor(rand() * 4) * 15, 30, 0);
+      const date = back === 0 ? Math.min(when.getTime(), now - 5 * 60_000) : when.getTime();
+      if (date >= day.getTime()) {
+        const first = PRODUCTS[Math.floor(rand() * PRODUCTS.length)];
+        const items: SaleItem[] = [{ productId: first.id, name: first.name, price: first.price, qty: 1 + Math.floor(rand() * 2) }];
+        if (rand() < 0.25) {
+          const second = PRODUCTS[Math.floor(rand() * PRODUCTS.length)];
+          if (second.id !== first.id) items.push({ productId: second.id, name: second.name, price: second.price, qty: 1 });
+        }
+        const customerId = rand() < 0.6 ? 1 + Math.floor(rand() * 8) : undefined;
+        drafts.push({ date, kind: "product", customerId, items, discount: 0, tip: 0, deposit: 0, method: pick(rand, PAYMENT_MIX), voided: false });
+      }
     }
   }
   // A groom package for the reports, and two voided sales to try the void flow.
   const groomDay = addDays(today, -12);
   const groomAt = new Date(groomDay);
   groomAt.setHours(10, 0, 0, 0);
-  drafts.push({ date: groomAt.getTime(), customerId: 4, items: [item(5)], discount: T(200_000), tip: T(200_000), deposit: T(500_000), method: "transfer", voided: false });
+  drafts.push({ date: groomAt.getTime(), kind: "service", customerId: 4, items: [item(5)], discount: T(200_000), tip: T(200_000), deposit: T(500_000), method: "transfer", voided: false });
   drafts.sort((a, b) => a.date - b.date);
   const sales: Sale[] = drafts.map((d, i) => ({ ...d, id: i + 1 }));
   for (const back of [1, 3]) {
@@ -162,7 +174,7 @@ export async function loadDemoData(): Promise<SeedResult> {
 
   // Bookings: a finished one linked to a sale today, the rest ahead, plus a cancelled and a no-show.
   const appointments: Appointment[] = [];
-  const todaySale = sales.find((s) => s.date >= today.getTime() && s.customerId !== undefined && !s.voided);
+  const todaySale = sales.find((s) => s.date >= today.getTime() && s.kind === "service" && s.customerId !== undefined && !s.voided);
   if (todaySale) {
     const ids = todaySale.items.flatMap((i) => (i.serviceId !== undefined ? [i.serviceId] : []));
     if (ids.length) {
@@ -183,13 +195,21 @@ export async function loadDemoData(): Promise<SeedResult> {
     [3, 17, 30, 3, [3]],
   ];
   for (const [ahead, hour, minute, customerId, serviceIds, deposit] of slots) {
-    let day = addDays(today, ahead);
-    if (ahead > 0 && !open(day)) day = addDays(day, 1);
+    const day = addDays(today, ahead);
+    
     const start = new Date(day);
     start.setHours(hour, minute, 0, 0);
     if (start.getTime() < now) continue;
     const durationMin = serviceIds.reduce((t, id) => t + (serviceById.get(id)?.durationMin ?? 30), 0);
     appointments.push({ id: appointments.length + 1, customerId, serviceIds, start: start.getTime(), durationMin, status: "booked", deposit });
+  }
+  // A booking on a closed day (Friday), to show that is allowed.
+  for (let ahead = 1; ahead <= 7; ahead++) {
+    const day = addDays(today, ahead);
+    if (weekdayIndex(day) !== 6) continue;
+    day.setHours(11, 0, 0, 0);
+    appointments.push({ id: appointments.length + 1, customerId: 7, serviceIds: [1], start: day.getTime(), durationMin: 30, status: "booked", note: "روز تعطیل، نوبت ویژه" });
+    break;
   }
   const past = (back: number, hour: number, customerId: number, status: Appointment["status"]) => {
     const d = addDays(today, -back);
@@ -203,9 +223,9 @@ export async function loadDemoData(): Promise<SeedResult> {
   const { jy, jm, jd } = toJ(today);
   const currentMonth = jy * 12 + jm - 1;
   const rules: RecurringExpense[] = [
-    { id: 1, categoryId: 1, amount: T(8_000_000), note: "اجاره مغازه", day: 1, active: true, lastGenerated: jd >= 1 ? currentMonth : currentMonth - 1 },
-    { id: 2, categoryId: 5, amount: T(6_000_000), note: "حقوق دستیار", day: 5, active: true, lastGenerated: jd >= 5 ? currentMonth : currentMonth - 1 },
-    { id: 3, categoryId: 3, amount: T(1_200_000), note: "قبض برق و آب", day: 20, active: true, lastGenerated: jd >= 20 ? currentMonth : currentMonth - 1 },
+    { id: 1, categoryId: 1, amount: T(4_000_000), note: "اجاره مغازه", day: 1, active: true, lastGenerated: jd >= 1 ? currentMonth : currentMonth - 1 },
+    { id: 2, categoryId: 5, amount: T(3_500_000), note: "حقوق دستیار", day: 5, active: true, lastGenerated: jd >= 5 ? currentMonth : currentMonth - 1 },
+    { id: 3, categoryId: 3, amount: T(800_000), note: "قبض برق و آب", day: 20, active: true, lastGenerated: jd >= 20 ? currentMonth : currentMonth - 1 },
   ];
   const expenses: Expense[] = [];
   const windowStart = addDays(today, -HISTORY_DAYS).getTime();

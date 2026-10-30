@@ -6,7 +6,7 @@ import { loyaltyEligible } from "@/lib/crm";
 import { useById, useCustomerStats, useProducts, useServices } from "@/lib/hooks";
 import { createSale } from "@/lib/repo";
 import { useSettings } from "@/lib/settings";
-import { METHOD_LABEL, saleSubtotal, saleTotal, type PaymentMethod, type SaleItem } from "@/lib/types";
+import { METHOD_LABEL, saleSubtotal, saleTotal, type PaymentMethod, type SaleItem, type SaleKind } from "@/lib/types";
 import { toFa } from "@/lib/date";
 import { AmountInput } from "./AmountInput";
 import { CustomerPicker } from "./CustomerPicker";
@@ -85,7 +85,9 @@ function CartRow({
   );
 }
 
-export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: () => void }) {
+// One form for both kinds: a service use (visit) or a product sale. They are stored and reported separately.
+export function SaleForm({ kind = "service", initial, onDone }: { kind?: SaleKind; initial?: SaleInitial; onDone: () => void }) {
+  const isService = kind === "service";
   const { unit, vatEnabled, vatPercent, loyaltyEnabled, loyaltyEvery } = useSettings();
   const services = useServices().filter((s) => s.active);
   const products = useProducts().filter((p) => p.active);
@@ -102,6 +104,7 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
   const [freeApplied, setFreeApplied] = useState(false);
   const customerStats = useCustomerStats();
   const eligible =
+    isService &&
     loyaltyEnabled && customerId !== undefined && loyaltyEligible(customerStats.get(customerId), loyaltyEvery);
 
   const deposit = initial?.deposit ?? 0;
@@ -157,6 +160,7 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
     if (!valid || saving) return;
     setSaving(true);
     await createSale({
+      kind,
       customerId,
       items,
       discount,
@@ -200,6 +204,7 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
         </div>
       )}
 
+      {isService && (
       <div>
         <div className="mb-1 text-sm text-muted">خدمات</div>
         <div className="flex flex-wrap gap-2">
@@ -211,8 +216,9 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
           ))}
         </div>
       </div>
+      )}
 
-      {products.length > 0 && (
+      {!isService && products.length > 0 && (
         <div>
           <div className="mb-1 text-sm text-muted">محصولات</div>
           <div className="flex flex-wrap gap-2">
@@ -242,7 +248,7 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
       )}
 
       <Card className="space-y-2">
-        <div className="text-sm text-muted">آیتم دلخواه (مثلاً محصول)</div>
+        <div className="text-sm text-muted">{isService ? "خدمت دلخواه (خارج از فهرست)" : "محصول دلخواه (بدون موجودی)"}</div>
         <input className={inputClass} placeholder="نام" value={customName} onChange={(e) => setCustomName(e.target.value)} />
         <AmountInput value={customPrice} onChange={setCustomPrice} />
         <Button variant="secondary" className="w-full" disabled={!customName.trim()} onClick={addCustom}>
@@ -250,13 +256,15 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
         </Button>
       </Card>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className={isService ? "grid grid-cols-2 gap-3" : ""}>
         <Field label="تخفیف">
           <AmountInput value={discount} onChange={setDiscount} />
         </Field>
-        <Field label="انعام">
-          <AmountInput value={tip} onChange={setTip} />
-        </Field>
+        {isService && (
+          <Field label="انعام">
+            <AmountInput value={tip} onChange={setTip} />
+          </Field>
+        )}
       </div>
 
       <Segmented
@@ -267,7 +275,7 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
 
       <Card className="space-y-1">
         <div className="flex justify-between text-muted">
-          <span>جمع خدمات</span>
+          <span>{isService ? "جمع خدمات" : "جمع محصولات"}</span>
           <span>{formatMoney(subtotal, unit)}</span>
         </div>
         {vat > 0 && (
@@ -290,7 +298,7 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
 
       {discount > subtotal && <p className="text-sm text-bad">تخفیف بیشتر از جمع خدمات است.</p>}
       <Button className="w-full" disabled={!valid || saving} onClick={save}>
-        ثبت فروش
+        {isService ? "ثبت خدمت و دریافت پول" : "ثبت فروش محصول"}
       </Button>
     </div>
   );

@@ -1,5 +1,6 @@
 export type PaymentMethod = "cash" | "card" | "transfer";
 export type AppointmentStatus = "booked" | "done" | "cancelled" | "noshow";
+export type SaleKind = "service" | "product";
 export type MessageChannel = "sms" | "telegram" | "whatsapp";
 
 // All money values are integers in Rial.
@@ -55,6 +56,8 @@ export interface SaleItem {
 export interface Sale {
   id?: number;
   date: number;
+  // Services (a visit) and products are kept apart everywhere; older records without it are worked out from the items.
+  kind?: SaleKind;
   customerId?: number;
   items: SaleItem[];
   discount: number;
@@ -128,3 +131,10 @@ export const saleSubtotal = (s: Pick<Sale, "items">) =>
 
 export const saleTotal = (s: Pick<Sale, "items" | "discount" | "tip"> & { vat?: number }) =>
   saleSubtotal(s) - s.discount + (s.vat ?? 0) + s.tip;
+
+export const isProductItem = (i: Pick<SaleItem, "productId">) => i.productId !== undefined;
+
+export const saleKind = (s: Pick<Sale, "items" | "kind">): SaleKind =>
+  s.kind ?? (s.items.length > 0 && s.items.every(isProductItem) ? "product" : "service");
+
+export const KIND_LABEL: Record<SaleKind, string> = { service: "خدمت", product: "فروش محصول" };

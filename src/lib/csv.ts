@@ -1,6 +1,6 @@
 import { toJ } from "./date";
 import { fromRial, type Unit, unitLabel } from "./money";
-import { METHOD_LABEL, saleTotal, type Customer, type Expense, type ExpenseCategory, type Sale } from "./types";
+import { KIND_LABEL, METHOD_LABEL, saleKind, saleTotal, type Customer, type Expense, type ExpenseCategory, type Sale } from "./types";
 
 const cell = (v: string | number) => {
   const s = String(v);
@@ -36,7 +36,7 @@ export function buildLedgerCsv(
       cols: [
         jalaliText(s.date),
         clock(s.date),
-        "درآمد",
+        `درآمد ${KIND_LABEL[saleKind(s)]}`,
         s.items.map((i) => (i.qty > 1 ? `${i.name} ×${i.qty}` : i.name)).join(" + "),
         customers.get(s.customerId as number)?.name ?? "",
         METHOD_LABEL[s.method],

@@ -107,3 +107,10 @@ export const monthRange = (jy: number, jm: number) => ({
 
 export const isSameDay = (a: Date | number, b: Date | number) =>
   startOfDay(a).getTime() === startOfDay(b).getTime();
+
+// First day of the Jalali month `n` months from the one `d` is in.
+export const addJMonths = (d: Date | number, n: number) => {
+  const { jy, jm } = toJ(d);
+  const idx = jy * 12 + (jm - 1) + n;
+  return fromJ(Math.floor(idx / 12), (idx % 12) + 1, 1);
+};
