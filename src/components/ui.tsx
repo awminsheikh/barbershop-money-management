@@ -124,13 +124,16 @@ export function Empty({ children }: { children: ReactNode }) {
   return <p className="py-10 text-center text-muted">{children}</p>;
 }
 
+let openSheets = 0;
+
 export function Sheet({ open, title, onClose, children }: { open: boolean; title: string; onClose: () => void; children: ReactNode }) {
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    // The page scrolls inside #app-scroll; globals.css stops it while any sheet is open.
+    openSheets++;
+    document.body.dataset.sheet = "open";
     return () => {
-      document.body.style.overflow = prev;
+      if (--openSheets === 0) delete document.body.dataset.sheet;
     };
   }, [open]);
 

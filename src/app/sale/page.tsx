@@ -27,7 +27,7 @@ export default function SalePage() {
         onDone={() => {
           setSaved(true);
           setRound((r) => r + 1);
-          window.scrollTo({ top: 0 });
+          document.getElementById("app-scroll")?.scrollTo({ top: 0 });
         }}
       />
     </>

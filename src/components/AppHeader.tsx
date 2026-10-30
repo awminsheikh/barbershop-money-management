@@ -10,7 +10,7 @@ import { Logo } from "./Logo";
 export function AppHeader({ onAdd }: { onAdd: () => void }) {
   const { shopName } = useSettings();
   return (
-    <header className="no-print sticky top-0 z-30 border-b border-line bg-bg pt-[env(safe-area-inset-top)]">
+    <header className="no-print shrink-0 border-b border-line bg-bg pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex max-w-xl items-center gap-3 px-4 py-2">
         <Link href="/" className="flex min-w-0 flex-1 items-center gap-2.5" aria-label="صفحه اصلی">
           <Logo className="h-10 w-auto shrink-0" />

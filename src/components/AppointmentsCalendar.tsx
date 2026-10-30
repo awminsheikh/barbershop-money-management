@@ -93,9 +93,10 @@ export function AppointmentsCalendar({
 
     body = (
       <div className="flex gap-2">
-        <div className="w-12 shrink-0 text-xs text-muted">
+        {/* One shift for the whole column (not per row), so every label stays on its row's top edge. */}
+        <div className="-mt-2 w-12 shrink-0 text-xs leading-4 text-muted">
           {hours.map((h) => (
-            <div key={h} style={{ height: ROW }} className="-mt-2 pt-0">
+            <div key={h} style={{ height: ROW }}>
               {timeLabel(h * 60)}
             </div>
           ))}

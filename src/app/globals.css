@@ -50,6 +50,10 @@ button {
   font: inherit;
 }
 
+body[data-sheet] .app-scroll {
+  overflow: hidden;
+}
+
 /* 16px keeps iOS Safari from zooming into inputs. */
 input,
 textarea,
@@ -71,6 +75,13 @@ select {
   nav,
   .no-print {
     display: none !important;
+  }
+  .app-frame {
+    position: static;
+    display: block;
+  }
+  .app-scroll {
+    overflow: visible;
   }
   main {
     padding-bottom: 0 !important;
