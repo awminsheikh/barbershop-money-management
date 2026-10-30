@@ -5,6 +5,7 @@ import { Button, Card, Chip, Field, PageHeader, Segmented, Toggle, inputClass } 
 import { exportBackup, importBackup } from "@/lib/backup";
 import { formatDate, formatTime, normalizeDigits, toFa, WEEKDAYS } from "@/lib/date";
 import { hashPin } from "@/lib/pin";
+import { loadDemoData, resetAllData } from "@/lib/seed";
 import { setSetting, useSettings } from "@/lib/settings";
 import type { MessageChannel } from "@/lib/types";
 import type { Unit } from "@/lib/money";
@@ -92,6 +93,58 @@ function BackupSection() {
           }}
         />
       </label>
+      {message && <p className="text-sm">{message}</p>}
+    </Section>
+  );
+}
+
+function DemoSection() {
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const run = async (confirmText: string, action: () => Promise<string>) => {
+    if (busy || !confirm(confirmText)) return;
+    setBusy(true);
+    try {
+      setMessage(await action());
+    } catch {
+      setMessage("انجام نشد.");
+    }
+    setBusy(false);
+  };
+
+  return (
+    <Section title="داده‌های نمونه">
+      <p className="text-sm text-muted">
+        برای امتحان کردن برنامه: مشتری، نوبت، فروش و هزینه‌ی چند ماه اخیر را به‌صورت نمونه می‌سازد. مالیات را از بخش بالا
+        روشن کنید تا در فروش‌های جدید هم امتحان شود.
+      </p>
+      <Button
+        variant="secondary"
+        className="w-full"
+        disabled={busy}
+        onClick={() =>
+          run("تمام اطلاعات فعلی پاک و با داده‌های نمونه جایگزین می‌شود. ادامه می‌دهید؟", async () => {
+            const r = await loadDemoData();
+            return `${toFa(r.customers)} مشتری، ${toFa(r.sales)} فروش، ${toFa(r.expenses)} هزینه و ${toFa(r.appointments)} نوبت ساخته شد.`;
+          })
+        }
+      >
+        بارگذاری داده‌های نمونه
+      </Button>
+      <Button
+        variant="danger"
+        className="w-full"
+        disabled={busy}
+        onClick={() =>
+          run("تمام مشتری‌ها، فروش‌ها و هزینه‌ها برای همیشه پاک می‌شود. ادامه می‌دهید؟", async () => {
+            await resetAllData();
+            return "همه اطلاعات پاک شد.";
+          })
+        }
+      >
+        پاک کردن همه اطلاعات
+      </Button>
       {message && <p className="text-sm">{message}</p>}
     </Section>
   );
@@ -222,6 +275,7 @@ export default function SettingsPage() {
 
       <PinSection />
       <BackupSection />
+      <DemoSection />
     </>
   );
 }

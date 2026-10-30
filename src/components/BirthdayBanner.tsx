@@ -6,6 +6,7 @@ import { toFa } from "@/lib/date";
 import { useCustomers } from "@/lib/hooks";
 import { fillTemplate, sendMessage } from "@/lib/messaging";
 import { useSettings } from "@/lib/settings";
+import { Icon } from "./Icon";
 import { Button, Card } from "./ui";
 
 // Birthdays today and in the coming week, with a one-tap greeting.
@@ -22,7 +23,10 @@ export function BirthdayBanner() {
 
   return (
     <Card className="mb-4 space-y-2">
-      <h2 className="font-semibold">🎂 تولدهای نزدیک</h2>
+      <h2 className="flex items-center gap-2 font-semibold">
+        <Icon name="gift" className="h-5 w-5 text-brand" />
+        تولدهای نزدیک
+      </h2>
       {upcoming.map(({ c, days }) => (
         <div key={c.id} className="flex items-center justify-between gap-2">
           <div>

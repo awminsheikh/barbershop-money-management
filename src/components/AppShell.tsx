@@ -7,16 +7,17 @@ import { generateRecurring } from "@/lib/recurring";
 import { hashPin } from "@/lib/pin";
 import { useSettings } from "@/lib/settings";
 import { toFa } from "@/lib/date";
+import { Icon, type IconName } from "./Icon";
 import { Logo } from "./Logo";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
-const NAV = [
-  { href: "/", label: "امروز", icon: "🏠" },
-  { href: "/appointments/", label: "نوبت‌ها", icon: "📅" },
-  { href: "/sale/", label: "فروش", icon: "✂️" },
-  { href: "/customers/", label: "مشتریان", icon: "👥" },
-  { href: "/more/", label: "بیشتر", icon: "☰" },
+const NAV: { href: string; label: string; icon: IconName }[] = [
+  { href: "/", label: "امروز", icon: "home" },
+  { href: "/appointments/", label: "نوبت‌ها", icon: "calendar" },
+  { href: "/sale/", label: "فروش", icon: "scissors" },
+  { href: "/customers/", label: "مشتریان", icon: "users" },
+  { href: "/more/", label: "بیشتر", icon: "grid" },
 ];
 
 function PinScreen({ pinHash, onUnlock }: { pinHash: string; onUnlock: () => void }) {
@@ -109,7 +110,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                     active ? "font-bold text-accent" : "text-muted"
                   }`}
                 >
-                  <span className="text-xl leading-none">{n.icon}</span>
+                  <span
+                    className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors ${
+                      active ? "bg-accent/15" : ""
+                    }`}
+                  >
+                    <Icon name={n.icon} className="h-6 w-6" />
+                  </span>
                   {n.label}
                 </Link>
               </li>

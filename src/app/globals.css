@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
-/* Dark theme taken from the ALMAS logo: black ground, orange apron, cyan shirt, navy lettering. */
+/* Dark theme taken from the ALMAS logo: deep navy ground, orange apron, cyan shirt. */
 :root {
   color-scheme: dark;
-  --bg: #000000;
-  --card: #0f1318;
-  --ink: #f2f6f8;
-  --muted: #8f9bab;
-  --line: #222a34;
+  --bg: #0a1631;
+  --card: #0f2044;
+  --ink: #eef3fb;
+  --muted: #94a3c0;
+  --line: #1d3263;
   --brand: #eb9c6c;
   --brand-ink: #17110d;
-  --brand-soft: #16294a;
+  --brand-soft: #17305f;
   --accent: #62d4da;
   --good: #4fd6b4;
   --bad: #ff7d78;

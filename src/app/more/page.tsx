@@ -1,26 +1,35 @@
 import Link from "next/link";
-import { Card, PageHeader } from "@/components/ui";
+import { Icon, type IconName } from "@/components/Icon";
+import { PageHeader } from "@/components/ui";
 
-const ITEMS = [
-  { href: "/reports/", title: "گزارش‌ها", hint: "درآمد، هزینه و سود؛ ابطال فروش" },
-  { href: "/insights/", title: "تحلیل کسب‌وکار", hint: "ساعت‌ها و روزهای شلوغ، بهترین مشتری‌ها" },
-  { href: "/products/", title: "محصولات و موجودی", hint: "فروش محصول، موجودی و هشدار کمبود" },
-  { href: "/expenses/", title: "هزینه‌ها", hint: "ثبت و مدیریت هزینه‌ها و دسته‌ها" },
-  { href: "/services/", title: "خدمات و قیمت‌ها", hint: "فهرست خدمات، قیمت و مدت" },
-  { href: "/settings/", title: "تنظیمات", hint: "واحد پول، ساعت کاری، پیام، رمز، پشتیبان" },
+const ITEMS: { href: string; title: string; hint: string; icon: IconName }[] = [
+  { href: "/profile/", title: "پروفایل و خدمات", hint: "اطلاعات آرایشگاه، خدمات و قیمت پیش‌فرض", icon: "user" },
+  { href: "/reports/", title: "گزارش‌ها", hint: "درآمد، هزینه و سود؛ ابطال فروش", icon: "chart" },
+  { href: "/insights/", title: "تحلیل کسب‌وکار", hint: "ساعت‌ها و روزهای شلوغ، بهترین مشتری‌ها", icon: "trend" },
+  { href: "/products/", title: "محصولات و موجودی", hint: "فروش محصول، موجودی و هشدار کمبود", icon: "box" },
+  { href: "/expenses/", title: "هزینه‌ها", hint: "ثبت و مدیریت هزینه‌ها و دسته‌ها", icon: "wallet" },
+  { href: "/settings/", title: "تنظیمات", hint: "واحد پول، ساعت کاری، پیام، رمز، پشتیبان", icon: "sliders" },
 ];
 
 export default function MorePage() {
   return (
     <>
       <PageHeader title="بیشتر" />
-      <div className="space-y-3">
+      <div className="overflow-hidden rounded-2xl border border-line bg-card">
         {ITEMS.map((i) => (
-          <Link key={i.href} href={i.href} className="block">
-            <Card className="active:opacity-70">
-              <div className="font-semibold">{i.title}</div>
-              <div className="text-sm text-muted">{i.hint}</div>
-            </Card>
+          <Link
+            key={i.href}
+            href={i.href}
+            className="flex items-center gap-3 border-b border-line p-4 last:border-0 active:bg-line/50"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-accent">
+              <Icon name={i.icon} className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">{i.title}</span>
+              <span className="block truncate text-sm text-muted">{i.hint}</span>
+            </span>
+            <Icon name="chevron" className="h-4 w-4 shrink-0 text-muted" />
           </Link>
         ))}
       </div>

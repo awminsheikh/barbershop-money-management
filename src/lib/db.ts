@@ -12,6 +12,14 @@ import type {
   SettingRow,
 } from "./types";
 
+// Starter data the owner can edit. Prices start at 0 so he enters his own.
+export const STARTER_SERVICES: Service[] = [
+  { name: "کوتاهی مو", price: 0, durationMin: 30, active: true },
+  { name: "اصلاح صورت و ریش", price: 0, durationMin: 30, active: true },
+  { name: "پک دامادی", price: 0, durationMin: 120, active: true },
+];
+export const STARTER_CATEGORIES: ExpenseCategory[] = [{ name: "اجاره" }, { name: "مواد مصرفی" }, { name: "قبوض" }, { name: "سایر" }];
+
 class AppDB extends Dexie {
   services!: EntityTable<Service, "id">;
   customers!: EntityTable<Customer, "id">;
@@ -45,19 +53,9 @@ class AppDB extends Dexie {
       dayCloses: "++id, day",
     });
 
-    // Starter data the owner can edit. Prices start at 0 so he enters his own.
     this.on("populate", (tx) => {
-      tx.table("services").bulkAdd([
-        { name: "کوتاهی مو", price: 0, durationMin: 30, active: true },
-        { name: "اصلاح صورت و ریش", price: 0, durationMin: 30, active: true },
-        { name: "پک دامادی", price: 0, durationMin: 120, active: true },
-      ]);
-      tx.table("expenseCategories").bulkAdd([
-        { name: "اجاره" },
-        { name: "مواد مصرفی" },
-        { name: "قبوض" },
-        { name: "سایر" },
-      ]);
+      tx.table("services").bulkAdd(STARTER_SERVICES);
+      tx.table("expenseCategories").bulkAdd(STARTER_CATEGORIES);
     });
   }
 }

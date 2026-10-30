@@ -6,6 +6,10 @@ import type { Unit } from "./money";
 import type { MessageChannel } from "./types";
 
 export interface Settings {
+  shopName: string;
+  ownerName: string;
+  shopPhone: string;
+  shopAddress: string;
   unit: Unit;
   workStart: string;
   workEnd: string;
@@ -29,6 +33,10 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  shopName: "الماس",
+  ownerName: "",
+  shopPhone: "",
+  shopAddress: "",
   unit: "toman",
   workStart: "09:00",
   workEnd: "21:00",

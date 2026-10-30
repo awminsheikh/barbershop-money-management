@@ -3,7 +3,7 @@ import { hhmm } from "./date";
 import { saveFile } from "./files";
 import { setSetting } from "./settings";
 
-const TABLES = [
+export const TABLES = [
   "services",
   "customers",
   "appointments",

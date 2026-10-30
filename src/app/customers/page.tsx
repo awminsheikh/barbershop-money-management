@@ -2,6 +2,7 @@
 
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo, useState } from "react";
+import { Icon } from "@/components/Icon";
 import { Button, Card, Empty, Field, PageHeader, Segmented, Sheet, Toggle, inputClass } from "@/components/ui";
 import { db } from "@/lib/db";
 import { daysSince, loyaltyEligible } from "@/lib/crm";
@@ -205,9 +206,9 @@ export default function CustomersPage() {
             return (
               <Card key={c.id} className="flex items-center justify-between gap-2">
                 <button type="button" className="min-w-0 flex-1 text-start" onClick={() => setOpen(c)}>
-                  <div className="truncate font-semibold">
-                    {c.vip ? "⭐ " : ""}
-                    {c.name}
+                  <div className="flex items-center gap-1.5 truncate font-semibold">
+                    {c.vip && <Icon name="star" filled className="h-4 w-4 shrink-0 text-brand" />}
+                    <span className="truncate">{c.name}</span>
                   </div>
                   <div className="text-sm text-muted">
                     {last !== undefined ? `${toFa(daysSince(last, now))} روز از آخرین مراجعه` : "هنوز مراجعه نداشته"}

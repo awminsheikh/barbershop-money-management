@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, type Unit } from "@/lib/money";
 import { loyaltyEligible } from "@/lib/crm";
 import { useById, useCustomerStats, useProducts, useServices } from "@/lib/hooks";
 import { createSale } from "@/lib/repo";
@@ -19,11 +19,78 @@ export interface SaleInitial {
   deposit?: number;
 }
 
+function CartRow({
+  item,
+  defaultPrice,
+  maxQty,
+  unit,
+  onChange,
+  onRemove,
+}: {
+  item: SaleItem;
+  defaultPrice?: number;
+  maxQty?: number;
+  unit: Unit;
+  onChange: (patch: Partial<SaleItem>) => void;
+  onRemove: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const custom = defaultPrice === undefined;
+  const changed = !custom && item.price !== defaultPrice;
+  const showInput = custom || editing || changed;
+
+  return (
+    <div className="space-y-2 border-b border-line pb-3 last:border-0 last:pb-0">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-semibold">{item.name}</span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            className="h-10 w-10 rounded-lg border border-line text-lg"
+            onClick={() => (item.qty > 1 ? onChange({ qty: item.qty - 1 }) : onRemove())}
+            aria-label="کم کردن"
+          >
+            −
+          </button>
+          <span className="w-8 text-center">{toFa(item.qty)}</span>
+          <button
+            type="button"
+            className="h-10 w-10 rounded-lg border border-line text-lg disabled:opacity-30"
+            disabled={maxQty !== undefined && item.qty >= maxQty}
+            onClick={() => onChange({ qty: item.qty + 1 })}
+            aria-label="اضافه کردن"
+          >
+            +
+          </button>
+        </div>
+      </div>
+      {showInput ? (
+        <>
+          <AmountInput value={item.price} onChange={(price) => onChange({ price })} />
+          {changed && (
+            <button type="button" className="text-sm text-accent" onClick={() => { onChange({ price: defaultPrice }); setEditing(false); }}>
+              بازگشت به قیمت پیش‌فرض ({formatMoney(defaultPrice, unit)})
+            </button>
+          )}
+        </>
+      ) : (
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted">{formatMoney(item.price, unit)}</span>
+          <button type="button" className="text-accent" onClick={() => setEditing(true)}>
+            تغییر قیمت
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: () => void }) {
   const { unit, vatEnabled, vatPercent, loyaltyEnabled, loyaltyEvery } = useSettings();
   const services = useServices().filter((s) => s.active);
   const products = useProducts().filter((p) => p.active);
   const productById = useById(useProducts());
+  const serviceById = useById(useServices());
   const [customerId, setCustomerId] = useState(initial?.customerId);
   const [items, setItems] = useState<SaleItem[]>(initial?.items ?? []);
   const [discount, setDiscount] = useState(0);
@@ -65,6 +132,14 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
       return [...prev, { productId: id, name: p.name, price: p.price, qty: 1 }];
     });
   };
+
+  // The price set in the profile (services) or products page; custom items have none.
+  const defaultPriceOf = (item: SaleItem) =>
+    item.serviceId !== undefined
+      ? serviceById.get(item.serviceId)?.price
+      : item.productId !== undefined
+        ? productById.get(item.productId)?.price
+        : undefined;
 
   const patchItem = (index: number, patch: Partial<SaleItem>) =>
     setItems((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)));
@@ -131,6 +206,7 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
           {services.map((s) => (
             <Chip key={s.id} onClick={() => addService(s.id!)}>
               {s.name}
+              {s.price > 0 && <span className="text-muted"> · {formatMoney(s.price, unit, false)}</span>}
             </Chip>
           ))}
         </div>
@@ -152,32 +228,15 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
       {items.length > 0 && (
         <Card className="space-y-3">
           {items.map((item, i) => (
-            <div key={i} className="space-y-2 border-b border-line pb-3 last:border-0 last:pb-0">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold">{item.name}</span>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    className="h-10 w-10 rounded-lg border border-line text-lg"
-                    onClick={() => (item.qty > 1 ? patchItem(i, { qty: item.qty - 1 }) : setItems(items.filter((_, j) => j !== i)))}
-                    aria-label="کم کردن"
-                  >
-                    −
-                  </button>
-                  <span className="w-8 text-center">{toFa(item.qty)}</span>
-                  <button
-                    type="button"
-                    className="h-10 w-10 rounded-lg border border-line text-lg disabled:opacity-30"
-                    disabled={item.productId !== undefined && item.qty >= (productById.get(item.productId)?.stock ?? 0)}
-                    onClick={() => patchItem(i, { qty: item.qty + 1 })}
-                    aria-label="اضافه کردن"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-              <AmountInput value={item.price} onChange={(price) => patchItem(i, { price })} />
-            </div>
+            <CartRow
+              key={item.serviceId !== undefined ? `s${item.serviceId}` : item.productId !== undefined ? `p${item.productId}` : `c${i}`}
+              item={item}
+              defaultPrice={defaultPriceOf(item)}
+              maxQty={item.productId !== undefined ? (productById.get(item.productId)?.stock ?? 0) : undefined}
+              unit={unit}
+              onChange={(patch) => patchItem(i, patch)}
+              onRemove={() => setItems(items.filter((_, j) => j !== i))}
+            />
           ))}
         </Card>
       )}

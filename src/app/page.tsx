@@ -5,7 +5,9 @@ import { useState } from "react";
 import { AmountInput } from "@/components/AmountInput";
 import { BirthdayBanner } from "@/components/BirthdayBanner";
 import { DayCloseSheet } from "@/components/DayCloseSheet";
+import { Icon } from "@/components/Icon";
 import { Logo } from "@/components/Logo";
+import { WeekChart } from "@/components/WeekChart";
 import { AppointmentsPanel } from "@/components/AppointmentsPanel";
 import { SaleForm } from "@/components/SaleForm";
 import { Button, Sheet, Stat } from "@/components/ui";
@@ -25,8 +27,11 @@ function BackupBanner() {
   if (!ready || !hasData) return null;
   if (lastBackupAt && now - lastBackupAt < WEEK_MS) return null;
   return (
-    <Link href="/settings/" className="mb-4 block rounded-xl border border-brand bg-brand-soft p-3 text-sm">
-      {lastBackupAt ? "بیش از یک هفته از آخرین پشتیبان‌گیری گذشته است." : "هنوز پشتیبان نگرفته‌اید."} برای محافظت از اطلاعات، پشتیبان بگیرید ←
+    <Link href="/settings/" className="mb-4 flex items-center gap-2 rounded-xl border border-brand bg-brand-soft p-3 text-sm">
+      <span className="flex-1">
+        {lastBackupAt ? "بیش از یک هفته از آخرین پشتیبان‌گیری گذشته است." : "هنوز پشتیبان نگرفته‌اید."} برای محافظت از اطلاعات، پشتیبان بگیرید.
+      </span>
+      <Icon name="chevron" className="h-4 w-4 shrink-0 text-muted" />
     </Link>
   );
 }
@@ -35,8 +40,10 @@ function LowStockBanner() {
   const low = useProducts().filter((p) => p.active && p.stock <= p.lowStockAt);
   if (low.length === 0) return null;
   return (
-    <Link href="/products/" className="mb-4 block rounded-xl border border-bad p-3 text-sm">
-      موجودی کم: {low.map((p) => p.name).join("، ")} ←
+    <Link href="/products/" className="mb-4 flex items-center gap-2 rounded-xl border border-bad p-3 text-sm">
+      <Icon name="alert" className="h-5 w-5 shrink-0 text-bad" />
+      <span className="flex-1">موجودی کم: {low.map((p) => p.name).join("، ")}</span>
+      <Icon name="chevron" className="h-4 w-4 shrink-0 text-muted" />
     </Link>
   );
 }
@@ -77,7 +84,7 @@ function QuickExpense({ onDone }: { onDone: () => void }) {
 }
 
 export default function HomePage() {
-  const { unit } = useSettings();
+  const { unit, shopName } = useSettings();
   const now = new Date();
   const { from, to } = dayRange(now);
   const summary = useSummary(from, to);
@@ -85,13 +92,20 @@ export default function HomePage() {
 
   return (
     <>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
+      <header className="mb-5 flex items-center gap-3">
+        <Logo className="h-12 w-auto shrink-0" />
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-lg font-bold leading-tight">{shopName || "الماس"}</h1>
           <div className="text-sm text-muted">{formatDate(now)}</div>
-          <h1 className="text-2xl font-bold">امروز</h1>
         </div>
-        <Logo className="h-16 w-auto" />
-      </div>
+        <Link
+          href="/profile/"
+          aria-label="پروفایل"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-card text-accent active:opacity-70"
+        >
+          <Icon name="user" className="h-5 w-5" />
+        </Link>
+      </header>
 
       <BackupBanner />
       <LowStockBanner />
@@ -110,6 +124,10 @@ export default function HomePage() {
           <Stat label="هزینه" value={formatMoney(summary.expenses, unit)} tone="bad" />
           <Stat label="سود" value={formatMoney(summary.profit, unit)} tone={summary.profit < 0 ? "bad" : "good"} />
         </div>
+      </section>
+
+      <section className="mb-6">
+        <WeekChart now={now} />
       </section>
 
       <div className="grid grid-cols-2 gap-3">
