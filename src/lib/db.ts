@@ -10,6 +10,7 @@ import type {
   Sale,
   Service,
   SettingRow,
+  User,
 } from "./types";
 
 // Starter data the owner can edit. Prices start at 0 so he enters his own.
@@ -31,6 +32,7 @@ class AppDB extends Dexie {
   products!: EntityTable<Product, "id">;
   recurringExpenses!: EntityTable<RecurringExpense, "id">;
   dayCloses!: EntityTable<DayClose, "id">;
+  users!: EntityTable<User, "id">;
 
   constructor() {
     super("barbershop");
@@ -51,6 +53,11 @@ class AppDB extends Dexie {
     // v3: cash count at the end of the day.
     this.version(3).stores({
       dayCloses: "++id, day",
+    });
+
+    // v4: login accounts (kept out of backups and "wipe everything").
+    this.version(4).stores({
+      users: "++id, &username",
     });
 
     this.on("populate", (tx) => {

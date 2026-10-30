@@ -59,6 +59,20 @@ page (busiest hours and days, best customers, repeat rate).
 Settings, Sample data, fills every screen with a few months of made-up customers, bookings, sales and expenses
 (`src/lib/seed.ts`); the same page can wipe everything back to a fresh install. Both ask for confirmation.
 
+## Login
+
+The first time the app opens it asks for two accounts: an admin and the barbershop owner. Both are created on the
+phone by whoever installs it, then the phone goes to the owner. Each user can change their own username and password
+under More, Account. Only the admin sees the Users page, where the owner's login can be reset if it is forgotten. The
+owner's screens never mention the admin account, and the accounts are kept out of backups so backup files do not reveal it.
+
+This is a lock on the app, not server security: everything lives on the phone, so it keeps customers and staff out of
+the books but would not stop someone who can open the phone's browser storage. Passwords are stored only as salted
+hashes. After 5 wrong tries login waits 30 seconds.
+
+In development (`npm run dev`) the accounts `admin` / `admin123` and `owner` / `owner123` are created automatically,
+together with the sample data. This never runs in a production build.
+
 ## Data and backups
 
 - Money is stored as integer Rial. The Toman/Rial switch only changes how amounts are shown and typed.

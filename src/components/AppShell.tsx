@@ -3,16 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { AuthContext } from "@/lib/auth-context";
+import { clearSession, ensureDemoUsers, readSession, saveSession } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { generateRecurring } from "@/lib/recurring";
 import { loadDemoData } from "@/lib/seed";
-import { hashPin } from "@/lib/pin";
 import { useSettings } from "@/lib/settings";
-import { toFa } from "@/lib/date";
 import { AddServiceSheet } from "./AddServiceSheet";
 import { AppHeader } from "./AppHeader";
+import { LoginScreen, SetupScreen } from "./AuthScreens";
 import { Breadcrumb } from "./Breadcrumb";
 import { Icon, type IconName } from "./Icon";
-import { Logo } from "./Logo";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
@@ -24,88 +26,64 @@ const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/more/", label: "بیشتر", icon: "grid" },
 ];
 
-function PinScreen({ pinHash, onUnlock }: { pinHash: string; onUnlock: () => void }) {
-  const [pin, setPin] = useState("");
-  const [error, setError] = useState(false);
-
-  const press = async (d: string) => {
-    const next = (pin + d).slice(0, 4);
-    setPin(next);
-    setError(false);
-    if (next.length === 4) {
-      if ((await hashPin(next)) === pinHash) {
-        sessionStorage.setItem("unlocked", "1");
-        onUnlock();
-      } else {
-        setError(true);
-        setPin("");
-      }
-    }
-  };
-
-  return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-6 p-6">
-      <Logo className="h-28 w-auto" />
-      <h1 className="text-xl font-bold">رمز ورود را وارد کنید</h1>
-      <div className="flex gap-3" aria-label="رمز">
-        {[0, 1, 2, 3].map((i) => (
-          <span key={i} className={`h-4 w-4 rounded-full border border-brand ${i < pin.length ? "bg-brand" : ""}`} />
-        ))}
-      </div>
-      <p className={`h-5 text-sm text-bad ${error ? "" : "invisible"}`}>رمز اشتباه است</p>
-      <div className="grid grid-cols-3 gap-3" dir="ltr">
-        {["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"].map((d) =>
-          d === "" ? (
-            <span key="blank" />
-          ) : (
-            <button
-              key={d}
-              type="button"
-              className="h-16 w-16 rounded-full border border-line bg-card text-xl active:opacity-60"
-              onClick={() => (d === "⌫" ? setPin(pin.slice(0, -1)) : press(d))}
-            >
-              {d === "⌫" ? d : toFa(d)}
-            </button>
-          ),
-        )}
-      </div>
-    </div>
-  );
-}
-
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const settings = useSettings();
   const [adding, setAdding] = useState(false);
-  const [unlocked, setUnlocked] = useState(() => typeof window !== "undefined" && sessionStorage.getItem("unlocked") === "1");
+  const [userId, setUserId] = useState<number | null>(readSession);
+  const userCount = useLiveQuery(() => db.users.count(), []);
+  // null = no such account any more (removed or reset), undefined = still loading.
+  const user = useLiveQuery(async () => (userId === null ? null : ((await db.users.get(userId)) ?? null)), [userId]);
 
   useEffect(() => {
     // Ask the browser not to evict his data when storage is tight.
     navigator.storage?.persist?.().catch(() => {});
     // Development only: the first time a browser opens the app it gets sample data. A flag in localStorage
     // (which "wipe everything" leaves alone) keeps it from coming back after he deletes it.
-    if (process.env.NODE_ENV !== "production" && !localStorage.getItem("demoSeeded")) {
-      localStorage.setItem("demoSeeded", "1");
-      loadDemoData();
+    if (process.env.NODE_ENV !== "production") {
+      if (!localStorage.getItem("demoSeeded")) {
+        localStorage.setItem("demoSeeded", "1");
+        loadDemoData();
+      }
+      // Development accounts: admin / admin123 and owner / owner123.
+      if (!localStorage.getItem("demoUsers")) {
+        localStorage.setItem("demoUsers", "1");
+        ensureDemoUsers();
+      }
     }
     if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
       navigator.serviceWorker.register(`${basePath}/sw.js`, { scope: `${basePath}/` }).catch(() => {});
     }
   }, []);
 
-  const locked = !settings.ready || (!!settings.pinHash && !unlocked);
+  const signedIn = !!user;
   useEffect(() => {
-    if (!locked) generateRecurring().catch(() => {});
-  }, [locked]);
+    if (signedIn) generateRecurring().catch(() => {});
+  }, [signedIn]);
 
-  if (!settings.ready) return <div className="min-h-dvh" />;
-  if (settings.pinHash && !unlocked) {
-    return <PinScreen pinHash={settings.pinHash} onUnlock={() => setUnlocked(true)} />;
+  const developing = process.env.NODE_ENV !== "production";
+  const waitingForDemoUsers = developing && userCount === 0 && typeof window !== "undefined" && !localStorage.getItem("demoUsers");
+  if (!settings.ready || userCount === undefined || user === undefined || waitingForDemoUsers) return <div className="min-h-dvh" />;
+  if (userCount === 0) return <SetupScreen />;
+  if (!user) {
+    return (
+      <LoginScreen
+        onLogin={(u, remember) => {
+          saveSession(u.id as number, remember);
+          setUserId(u.id as number);
+        }}
+      />
+    );
   }
+
+  const logout = () => {
+    clearSession();
+    setUserId(null);
+  };
 
   const path = pathname.endsWith("/") ? pathname : `${pathname}/`;
   return (
-    <>
+    <AuthContext value={{ user, logout }}>
       <AppHeader onAdd={() => setAdding(true)} />
       <main className="mx-auto min-h-[calc(100dvh-4rem)] w-full max-w-xl px-4 pt-4 pb-28">
         <Breadcrumb path={path} />
@@ -138,6 +116,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </ul>
       </nav>
-    </>
+    </AuthContext>
   );
 }

@@ -28,7 +28,6 @@ export interface Settings {
   loyaltyEvery: number;
   // A customer who has not visited for this many days shows in the "away" list.
   inactiveDays: number;
-  pinHash?: string;
   lastBackupAt?: number;
 }
 

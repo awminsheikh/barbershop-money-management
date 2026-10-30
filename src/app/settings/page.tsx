@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Button, Card, Chip, Field, PageHeader, Segmented, Toggle, inputClass } from "@/components/ui";
 import { exportBackup, importBackup } from "@/lib/backup";
 import { formatDate, formatTime, normalizeDigits, toFa, WEEKDAYS } from "@/lib/date";
-import { hashPin } from "@/lib/pin";
 import { loadDemoData, resetAllData } from "@/lib/seed";
 import { setSetting, useSettings } from "@/lib/settings";
 import type { MessageChannel } from "@/lib/types";
@@ -16,45 +15,6 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <h2 className="font-semibold">{title}</h2>
       {children}
     </Card>
-  );
-}
-
-function PinSection() {
-  const { pinHash } = useSettings();
-  const [pin, setPin] = useState("");
-  const valid = /^\d{4}$/.test(normalizeDigits(pin));
-
-  return (
-    <Section title="رمز ورود">
-      <p className="text-sm text-muted">
-        {pinHash ? "رمز ۴ رقمی فعال است. هر بار باز کردن برنامه رمز پرسیده می‌شود." : "با یک رمز ۴ رقمی، اطلاعات حساب شما محافظت می‌شود."}
-      </p>
-      <input
-        className={inputClass}
-        inputMode="numeric"
-        maxLength={4}
-        placeholder={pinHash ? "رمز جدید (۴ رقم)" : "رمز ۴ رقمی"}
-        value={pin}
-        onChange={(e) => setPin(e.target.value)}
-      />
-      <div className="grid grid-cols-2 gap-3">
-        <Button
-          disabled={!valid}
-          onClick={async () => {
-            await setSetting("pinHash", await hashPin(normalizeDigits(pin)));
-            sessionStorage.setItem("unlocked", "1");
-            setPin("");
-          }}
-        >
-          {pinHash ? "تغییر رمز" : "فعال‌سازی"}
-        </Button>
-        {pinHash && (
-          <Button variant="danger" onClick={() => setSetting("pinHash", undefined)}>
-            حذف رمز
-          </Button>
-        )}
-      </div>
-    </Section>
   );
 }
 
@@ -273,7 +233,6 @@ export default function SettingsPage() {
         )}
       </Section>
 
-      <PinSection />
       <BackupSection />
       <DemoSection />
     </>

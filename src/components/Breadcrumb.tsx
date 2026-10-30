@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
 import { crumbsFor } from "@/lib/nav";
 import { Icon } from "./Icon";
 
 // Where he is and a way back, at the top of the page content (not part of the header).
 export function Breadcrumb({ path }: { path: string }) {
-  const crumbs = crumbsFor(path);
+  const { user } = useAuth();
+  const crumbs = crumbsFor(path, user.role === "admin");
   if (crumbs.length === 0) return null;
   return (
     <nav aria-label="مسیر" className="no-print mb-3 flex flex-wrap items-center gap-1 text-sm text-muted">

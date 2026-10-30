@@ -108,6 +108,19 @@ export interface DayClose {
   createdAt: number;
 }
 
+export type Role = "admin" | "owner";
+
+// Login accounts: one admin (the developer / support) and one owner. Passwords are never stored, only a salted hash.
+export interface User {
+  id?: number;
+  username: string;
+  role: Role;
+  salt: string;
+  hash: string;
+  iterations: number;
+  createdAt: number;
+}
+
 export interface SettingRow {
   key: string;
   value: unknown;
