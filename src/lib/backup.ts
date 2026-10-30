@@ -13,6 +13,7 @@ const TABLES = [
   "settings",
   "products",
   "recurringExpenses",
+  "dayCloses",
 ] as const;
 
 export async function exportBackup() {

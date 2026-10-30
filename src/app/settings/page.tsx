@@ -173,6 +173,28 @@ export default function SettingsPage() {
         </p>
       </Section>
 
+      <Section title="باشگاه مشتریان">
+        <Toggle checked={s.loyaltyEnabled} onChange={(v) => setSetting("loyaltyEnabled", v)} label="خدمت رایگان بعد از چند مراجعه" />
+        {s.loyaltyEnabled && (
+          <Field label="تعداد مراجعه برای یک خدمت رایگان">
+            <input
+              className={inputClass}
+              inputMode="numeric"
+              value={toFa(s.loyaltyEvery)}
+              onChange={(e) => setSetting("loyaltyEvery", Math.max(1, Number(normalizeDigits(e.target.value).replace(/\D/g, "")) || 1))}
+            />
+          </Field>
+        )}
+        <Field label="مشتری غایب: بیش از چند روز بدون مراجعه">
+          <input
+            className={inputClass}
+            inputMode="numeric"
+            value={toFa(s.inactiveDays)}
+            onChange={(e) => setSetting("inactiveDays", Math.max(1, Number(normalizeDigits(e.target.value).replace(/\D/g, "")) || 1))}
+          />
+        </Field>
+      </Section>
+
       <Section title="پیام یادآوری به مشتری">
         <Segmented<MessageChannel>
           value={s.channel}
@@ -183,10 +205,16 @@ export default function SettingsPage() {
             { value: "whatsapp", label: "واتس‌اپ" },
           ]}
         />
-        <Field label="متن پیام">
+        <Field label="متن یادآوری نوبت">
           <textarea className={`${inputClass} py-2`} rows={3} value={s.template} onChange={(e) => setSetting("template", e.target.value)} />
         </Field>
-        <p className="text-sm text-muted">از {"{name}"}، {"{date}"} و {"{time}"} برای نام، تاریخ و ساعت نوبت استفاده کنید.</p>
+        <Field label="متن تبریک تولد">
+          <textarea className={`${inputClass} py-2`} rows={2} value={s.templateBirthday} onChange={(e) => setSetting("templateBirthday", e.target.value)} />
+        </Field>
+        <Field label="متن دعوت مشتریان غایب">
+          <textarea className={`${inputClass} py-2`} rows={2} value={s.templateComeback} onChange={(e) => setSetting("templateComeback", e.target.value)} />
+        </Field>
+        <p className="text-sm text-muted">در متن‌ها از {"{name}"} برای نام مشتری، و در یادآوری نوبت از {"{date}"} و {"{time}"} برای تاریخ و ساعت استفاده کنید.</p>
         {s.channel === "telegram" && (
           <p className="text-sm text-muted">در تلگرام، متن کپی می‌شود و فقط باید آن را در گفتگو بچسبانید.</p>
         )}

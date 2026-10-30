@@ -16,6 +16,9 @@ export interface Customer {
   name: string;
   phone?: string;
   notes?: string;
+  // Jalali month (1-12) and day.
+  birthday?: { month: number; day: number };
+  vip?: boolean;
   createdAt: number;
 }
 
@@ -61,6 +64,8 @@ export interface Sale {
   vat?: number;
   method: PaymentMethod;
   appointmentId?: number;
+  // True when this sale used the loyalty reward (one free service).
+  loyaltyFree?: boolean;
   voided: boolean;
   note?: string;
 }
@@ -89,6 +94,15 @@ export interface RecurringExpense {
   active: boolean;
   // Month index (jalali year * 12 + month - 1) up to which expenses were generated.
   lastGenerated: number;
+}
+
+export interface DayClose {
+  id?: number;
+  // Start of the day being closed.
+  day: number;
+  expected: number;
+  counted: number;
+  createdAt: number;
 }
 
 export interface SettingRow {

@@ -104,3 +104,7 @@ export function summarize(sales: Sale[], expenses: Expense[]): Summary {
 
 export const appointmentEnd = (a: Pick<Appointment, "start" | "durationMin">) =>
   a.start + a.durationMin * 60_000;
+
+export async function closeDay(day: number, expected: number, counted: number) {
+  return db.dayCloses.add({ day, expected, counted, createdAt: Date.now() });
+}

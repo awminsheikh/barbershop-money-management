@@ -49,6 +49,9 @@ in `src/app/globals.css` are taken from the logo.
 Appointments, quick sales, customers, services, products with stock (low-stock warning, restock logged as an
 expense), recurring expenses (rent, salaries; generated when the app opens), optional VAT (kept out of
 income), reports by day/week/month/year, Excel-friendly CSV ledger export and print/PDF, backup and restore.
+CRM: birthdays with one-tap greetings, "away" customers list, VIP flag, optional loyalty (free service after N
+visits), editable message templates (SMS / Telegram / WhatsApp). Also an end-of-day cash count and an insights
+page (busiest hours and days, best customers, repeat rate).
 
 ## Data and backups
 

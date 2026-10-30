@@ -3,6 +3,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
 import { db } from "./db";
+import { customerStats } from "./crm";
 import { summarize } from "./repo";
 import type { Customer, Service } from "./types";
 
@@ -41,3 +42,8 @@ export function useById<T extends { id?: number }>(rows: T[]) {
 
 export type CustomerMap = Map<number, Customer>;
 export type ServiceMap = Map<number, Service>;
+
+export function useCustomerStats() {
+  const sales = useLiveQuery(() => db.sales.toArray(), []);
+  return useMemo(() => customerStats(sales ?? []), [sales]);
+}

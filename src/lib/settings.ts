@@ -17,6 +17,13 @@ export interface Settings {
   vatPercent: number;
   channel: MessageChannel;
   template: string;
+  templateBirthday: string;
+  templateComeback: string;
+  loyaltyEnabled: boolean;
+  // A free service after this many paid visits.
+  loyaltyEvery: number;
+  // A customer who has not visited for this many days shows in the "away" list.
+  inactiveDays: number;
   pinHash?: string;
   lastBackupAt?: number;
 }
@@ -32,6 +39,11 @@ export const DEFAULT_SETTINGS: Settings = {
   vatPercent: 10,
   channel: "sms",
   template: "سلام {name}، یادآوری نوبت شما: {date} ساعت {time}",
+  templateBirthday: "سلام {name}، تولدتان مبارک! از طرف آرایشگاه الماس",
+  templateComeback: "سلام {name}، مدتی است شما را ندیده‌ایم. هر وقت خواستید نوبت بگیرید.",
+  loyaltyEnabled: false,
+  loyaltyEvery: 10,
+  inactiveDays: 30,
 };
 
 export function useSettings(): Settings & { ready: boolean } {

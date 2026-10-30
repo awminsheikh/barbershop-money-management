@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AmountInput } from "@/components/AmountInput";
+import { BirthdayBanner } from "@/components/BirthdayBanner";
+import { DayCloseSheet } from "@/components/DayCloseSheet";
 import { Logo } from "@/components/Logo";
 import { AppointmentsPanel } from "@/components/AppointmentsPanel";
 import { SaleForm } from "@/components/SaleForm";
@@ -79,7 +81,7 @@ export default function HomePage() {
   const now = new Date();
   const { from, to } = dayRange(now);
   const summary = useSummary(from, to);
-  const [sheet, setSheet] = useState<"sale" | "expense" | null>(null);
+  const [sheet, setSheet] = useState<"sale" | "expense" | "close" | null>(null);
 
   return (
     <>
@@ -93,6 +95,7 @@ export default function HomePage() {
 
       <BackupBanner />
       <LowStockBanner />
+      <BirthdayBanner />
 
       <section className="mb-6">
         <h2 className="mb-2 font-semibold">نوبت‌های امروز</h2>
@@ -116,6 +119,11 @@ export default function HomePage() {
         </Button>
       </div>
 
+      <Button variant="secondary" className="mt-3 w-full" onClick={() => setSheet("close")}>
+        بستن صندوق امروز
+      </Button>
+
+      <DayCloseSheet open={sheet === "close"} onClose={() => setSheet(null)} />
       <Sheet open={sheet === "sale"} title="فروش سریع" onClose={() => setSheet(null)}>
         <SaleForm onDone={() => setSheet(null)} />
       </Sheet>

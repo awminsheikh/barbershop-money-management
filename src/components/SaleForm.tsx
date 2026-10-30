@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { formatMoney } from "@/lib/money";
-import { useById, useProducts, useServices } from "@/lib/hooks";
+import { loyaltyEligible } from "@/lib/crm";
+import { useById, useCustomerStats, useProducts, useServices } from "@/lib/hooks";
 import { createSale } from "@/lib/repo";
 import { useSettings } from "@/lib/settings";
 import { METHOD_LABEL, saleSubtotal, saleTotal, type PaymentMethod, type SaleItem } from "@/lib/types";
@@ -19,7 +20,7 @@ export interface SaleInitial {
 }
 
 export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: () => void }) {
-  const { unit, vatEnabled, vatPercent } = useSettings();
+  const { unit, vatEnabled, vatPercent, loyaltyEnabled, loyaltyEvery } = useSettings();
   const services = useServices().filter((s) => s.active);
   const products = useProducts().filter((p) => p.active);
   const productById = useById(useProducts());
@@ -31,6 +32,10 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
   const [customName, setCustomName] = useState("");
   const [customPrice, setCustomPrice] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [freeApplied, setFreeApplied] = useState(false);
+  const customerStats = useCustomerStats();
+  const eligible =
+    loyaltyEnabled && customerId !== undefined && loyaltyEligible(customerStats.get(customerId), loyaltyEvery);
 
   const deposit = initial?.deposit ?? 0;
   const subtotal = saleSubtotal({ items });
@@ -83,6 +88,7 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
       tip,
       deposit,
       vat,
+      loyaltyFree: freeApplied || undefined,
       method,
       appointmentId: initial?.appointmentId,
     });
@@ -92,8 +98,32 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
   return (
     <div className="space-y-4">
       <Field label="مشتری">
-        <CustomerPicker optional value={customerId} onChange={setCustomerId} />
+        <CustomerPicker
+          optional
+          value={customerId}
+          onChange={(id) => {
+            setCustomerId(id);
+            setFreeApplied(false);
+          }}
+        />
       </Field>
+
+      {eligible && (
+        <div className="rounded-xl border border-accent p-3 text-sm">
+          <div className="mb-2 text-accent">این مشتری خدمت رایگان باشگاه را دارد.</div>
+          <Button
+            variant="secondary"
+            className="w-full"
+            disabled={items.length === 0 || freeApplied}
+            onClick={() => {
+              setDiscount(items[0].price);
+              setFreeApplied(true);
+            }}
+          >
+            {freeApplied ? "اعمال شد" : "اعمال خدمت رایگان (اولین خدمت)"}
+          </Button>
+        </div>
+      )}
 
       <div>
         <div className="mb-1 text-sm text-muted">خدمات</div>

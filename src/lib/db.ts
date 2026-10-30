@@ -2,6 +2,7 @@ import Dexie, { type EntityTable } from "dexie";
 import type {
   Appointment,
   Customer,
+  DayClose,
   Expense,
   ExpenseCategory,
   Product,
@@ -21,6 +22,7 @@ class AppDB extends Dexie {
   settings!: EntityTable<SettingRow, "key">;
   products!: EntityTable<Product, "id">;
   recurringExpenses!: EntityTable<RecurringExpense, "id">;
+  dayCloses!: EntityTable<DayClose, "id">;
 
   constructor() {
     super("barbershop");
@@ -37,6 +39,10 @@ class AppDB extends Dexie {
     this.version(2).stores({
       products: "++id",
       recurringExpenses: "++id",
+    });
+    // v3: cash count at the end of the day.
+    this.version(3).stores({
+      dayCloses: "++id, day",
     });
 
     // Starter data the owner can edit. Prices start at 0 so he enters his own.
