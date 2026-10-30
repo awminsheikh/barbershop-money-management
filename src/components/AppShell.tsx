@@ -15,6 +15,7 @@ import { AppHeader } from "./AppHeader";
 import { LoginScreen, SetupScreen } from "./AuthScreens";
 import { Breadcrumb } from "./Breadcrumb";
 import { Icon, type IconName } from "./Icon";
+import { Logo } from "./Logo";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
@@ -31,6 +32,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const settings = useSettings();
   const [adding, setAdding] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
+  // The logo stays up at least this long so a fast start shows it instead of flashing.
+  const [splashDone, setSplashDone] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSplashDone(true), 700);
+    return () => clearTimeout(t);
+  }, []);
   const [userId, setUserId] = useState<number | null>(readSession);
   const userCount = useLiveQuery(() => db.users.count(), []);
   // null = no such account any more (removed or reset), undefined = still loading.
@@ -59,6 +66,25 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // iPhone home-screen apps can be given a window one status-bar short at launch (the layout height stops above the
+  // bottom of the screen and the tab bar floats). There the screen height is the truth, so the frame uses it.
+  useEffect(() => {
+    const root = document.documentElement;
+    const apply = () => {
+      const ios = (navigator as Navigator & { standalone?: boolean }).standalone === true;
+      const portrait = window.matchMedia("(orientation: portrait)").matches;
+      if (ios && portrait && screen.height > window.innerHeight) root.style.setProperty("--app-h", `${screen.height}px`);
+      else root.style.removeProperty("--app-h");
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    window.addEventListener("orientationchange", apply);
+    return () => {
+      window.removeEventListener("resize", apply);
+      window.removeEventListener("orientationchange", apply);
+    };
+  }, []);
+
   // The page scrolls inside the frame, so a new page has to be scrolled back to the top by hand.
   useEffect(() => {
     scroller.current?.scrollTo({ top: 0 });
@@ -74,7 +100,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     userCount === 0 &&
     typeof window !== "undefined" &&
     (hasBuildAccounts() || (developing && !localStorage.getItem("demoUsers")));
-  if (!settings.ready || userCount === undefined || user === undefined || waitingForAccounts) return <div className="min-h-svh" />;
+  if (!splashDone || !settings.ready || userCount === undefined || user === undefined || waitingForAccounts) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-bg" role="status" aria-label="در حال بارگذاری">
+        <Logo className="h-28 w-auto animate-pulse" />
+      </div>
+    );
+  }
   if (userCount === 0) return <SetupScreen />;
   if (!user) {
     return (
@@ -97,7 +129,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <AuthContext value={{ user, logout }}>
       {/* Header, page and tab bar are three rows of one full-screen column. Only the middle row scrolls, so the
           bars never move with the page (no sticky/fixed bars to drift when the phone's browser bars change). */}
-      <div className="app-frame fixed inset-0 flex flex-col">
+      <div className="app-frame fixed inset-x-0 top-0 flex flex-col" style={{ height: "var(--app-h, 100%)" }}>
         <AppHeader onAdd={() => setAdding(true)} />
         <div id="app-scroll" ref={scroller} className="app-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <main className="mx-auto w-full max-w-xl px-4 pt-4 pb-8">

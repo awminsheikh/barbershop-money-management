@@ -9,6 +9,38 @@ import { setSetting, useSettings } from "@/lib/settings";
 import type { MessageChannel } from "@/lib/types";
 import type { Unit } from "@/lib/money";
 
+const pad = (n: number) => String(n).padStart(2, "0");
+
+// Two selects instead of <input type="time">: iOS sizes that input by its content and spills it out of its column.
+function TimeSelect({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const [h, m] = value.split(":").map(Number);
+  const minutes = [...new Set([...Array.from({ length: 12 }, (_, i) => i * 5), m])].sort((a, b) => a - b);
+  const select = `${inputClass} min-w-0 flex-1 appearance-none px-1 text-center`;
+  return (
+    <div className="min-w-0">
+      <div className="mb-1 text-sm text-muted">{label}</div>
+      {/* ltr so it reads 09:00 like a clock, hours on the left. */}
+      <div dir="ltr" className="flex items-center gap-1">
+        <select className={select} aria-label={`${label}، ساعت`} value={h} onChange={(e) => onChange(`${pad(Number(e.target.value))}:${pad(m)}`)}>
+          {Array.from({ length: 24 }, (_, i) => (
+            <option key={i} value={i}>
+              {toFa(pad(i))}
+            </option>
+          ))}
+        </select>
+        <span className="text-muted">:</span>
+        <select className={select} aria-label={`${label}، دقیقه`} value={m} onChange={(e) => onChange(`${pad(h)}:${pad(Number(e.target.value))}`)}>
+          {minutes.map((n) => (
+            <option key={n} value={n}>
+              {toFa(pad(n))}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Card className="mb-4 space-y-4">
@@ -135,13 +167,9 @@ export default function SettingsPage() {
       </Section>
 
       <Section title="ساعت و روزهای کاری">
-        <div className="grid grid-cols-2 gap-3 [&_label]:min-w-0 [&_input]:min-w-0">
-          <Field label="شروع">
-            <input type="time" className={`${inputClass} text-center`} value={s.workStart} onChange={(e) => e.target.value && setSetting("workStart", e.target.value)} />
-          </Field>
-          <Field label="پایان">
-            <input type="time" className={`${inputClass} text-center`} value={s.workEnd} onChange={(e) => e.target.value && setSetting("workEnd", e.target.value)} />
-          </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <TimeSelect label="شروع" value={s.workStart} onChange={(v) => setSetting("workStart", v)} />
+          <TimeSelect label="پایان" value={s.workEnd} onChange={(v) => setSetting("workEnd", v)} />
         </div>
         <div>
           <div className="mb-1 text-sm text-muted">روزهای کاری</div>
