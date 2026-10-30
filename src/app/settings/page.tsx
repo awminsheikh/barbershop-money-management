@@ -135,12 +135,12 @@ export default function SettingsPage() {
       </Section>
 
       <Section title="ساعت و روزهای کاری">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 [&_label]:min-w-0 [&_input]:min-w-0">
           <Field label="شروع">
-            <input type="time" className={inputClass} value={s.workStart} onChange={(e) => e.target.value && setSetting("workStart", e.target.value)} />
+            <input type="time" className={`${inputClass} text-center`} value={s.workStart} onChange={(e) => e.target.value && setSetting("workStart", e.target.value)} />
           </Field>
           <Field label="پایان">
-            <input type="time" className={inputClass} value={s.workEnd} onChange={(e) => e.target.value && setSetting("workEnd", e.target.value)} />
+            <input type="time" className={`${inputClass} text-center`} value={s.workEnd} onChange={(e) => e.target.value && setSetting("workEnd", e.target.value)} />
           </Field>
         </div>
         <div>

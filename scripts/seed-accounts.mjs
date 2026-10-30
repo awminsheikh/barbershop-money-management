@@ -5,7 +5,7 @@
 //   ADMIN_USERNAME=... ADMIN_PASSWORD=... OWNER_USERNAME=... OWNER_PASSWORD=... node scripts/seed-accounts.mjs
 //
 // With none of the four set it prints nothing and the app falls back to its first-run setup screen.
-import { createHash, randomBytes } from "node:crypto";
+import { createHash } from "node:crypto";
 
 const ITERATIONS = 50_000;
 const env = process.env;
@@ -29,7 +29,9 @@ const account = (role, username, password) => {
   const name = username.trim().toLowerCase();
   if (name.length < 3 || /\s/.test(name)) throw new Error(`${role} username must be 3+ characters without spaces.`);
   if (password.length < 6) throw new Error(`${role} password must be at least 6 characters.`);
-  const salt = randomBytes(16).toString("hex");
+  // Same login always gives the same salt (and so the same hash), so a rebuild with unchanged secrets does not
+  // look like new accounts to phones. Only changing a username or password changes what the phones see.
+  const salt = createHash("sha256").update(`almas|${role}|${name}`).digest("hex").slice(0, 32);
   return { username: name, role, salt, hash: hash(password, salt), iterations: ITERATIONS, createdAt: Date.now() };
 };
 

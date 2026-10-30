@@ -70,7 +70,9 @@ visible to anyone who reads the site's code. Without the secrets the app falls b
 that asks for both accounts on the phone.
 
 A username or password changed under Account only changes it on that phone; another phone starts from the
-secrets again. Each user can change their own username and password
+secrets again. When you change a secret and redeploy, every phone replaces its accounts with the new ones the
+next time it opens the app (so passwords set by hand under Account are reset too); sales, customers and the rest
+of the data are left alone. Redeploying with unchanged secrets changes nothing on the phones. Each user can change their own username and password
 under More, Account. Only the admin sees the Users page, where the owner's login can be reset if it is forgotten. The
 owner's screens never mention the admin account, and the accounts are kept out of backups so backup files do not reveal it.
 

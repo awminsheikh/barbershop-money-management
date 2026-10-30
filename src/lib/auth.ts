@@ -7,6 +7,7 @@ import type { Role, User } from "./types";
 
 const SESSION_KEY = "session";
 const FAILS_KEY = "loginFails";
+const SEED_KEY = "seedAccounts";
 const MAX_FAILS = 5;
 const LOCK_MS = 30_000;
 
@@ -67,9 +68,20 @@ function buildAccounts(): Omit<User, "id">[] {
 
 export const hasBuildAccounts = () => buildAccounts().length === 2;
 
+// The phone follows the build: it takes the accounts from the build when it has none, or when the build's
+// accounts changed since it last took them (a new secret). Accounts it created itself, or changed by hand under
+// Account, are replaced then; sales, customers and the rest of the data are not touched.
 export async function seedBuildAccounts() {
-  if ((await db.users.count()) > 0) return;
-  await db.users.bulkAdd(buildAccounts());
+  const accounts = buildAccounts();
+  if (accounts.length !== 2) return;
+  const version = accounts.map((a) => `${a.username}:${a.hash}`).join("|");
+  if (localStorage.getItem(SEED_KEY) === version && (await db.users.count()) > 0) return;
+  await db.transaction("rw", db.users, async () => {
+    await db.users.clear();
+    await db.users.bulkAdd(accounts);
+  });
+  localStorage.setItem(SEED_KEY, version);
+  clearSession();
 }
 
 // Development only: ready-made accounts so every screen can be tried without the setup step.

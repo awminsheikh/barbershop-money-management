@@ -68,7 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     userCount === 0 &&
     typeof window !== "undefined" &&
     (hasBuildAccounts() || (developing && !localStorage.getItem("demoUsers")));
-  if (!settings.ready || userCount === undefined || user === undefined || waitingForAccounts) return <div className="min-h-dvh" />;
+  if (!settings.ready || userCount === undefined || user === undefined || waitingForAccounts) return <div className="min-h-svh" />;
   if (userCount === 0) return <SetupScreen />;
   if (!user) {
     return (
@@ -90,7 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <AuthContext value={{ user, logout }}>
       <AppHeader onAdd={() => setAdding(true)} />
-      <main className="mx-auto min-h-[calc(100dvh-4rem)] w-full max-w-xl px-4 pt-4 pb-28">
+      <main className="mx-auto min-h-[calc(100svh-4rem)] w-full max-w-xl px-4 pt-4 pb-28">
         <Breadcrumb path={path} />
         {children}
       </main>

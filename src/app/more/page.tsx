@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Icon, type IconName } from "@/components/Icon";
-import { PageHeader } from "@/components/ui";
+import { Button, PageHeader } from "@/components/ui";
 import { useAuth } from "@/lib/auth-context";
 
 const ITEMS: { href: string; title: string; hint: string; icon: IconName }[] = [
@@ -20,7 +20,7 @@ const ADMIN_ITEMS: typeof ITEMS = [
 ];
 
 export default function MorePage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const items = user.role === "admin" ? [...ITEMS, ...ADMIN_ITEMS] : ITEMS;
   return (
     <>
@@ -43,6 +43,9 @@ export default function MorePage() {
           </Link>
         ))}
       </div>
+      <Button variant="danger" className="mt-6 w-full" onClick={logout}>
+        خروج از حساب
+      </Button>
     </>
   );
 }
