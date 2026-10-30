@@ -66,15 +66,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // iPhone home-screen apps can be given a window one status-bar short at launch (the layout height stops above the
-  // bottom of the screen and the tab bar floats). There the screen height is the truth, so the frame uses it.
+  // iPhone home-screen apps can be given a window one status bar short at launch: nothing is painted below it, only
+  // the page background shows there. That strip already clears the home indicator, so the tab bar drops its own
+  // bottom padding (and shares the background colour, so the two read as one bar).
   useEffect(() => {
     const root = document.documentElement;
     const apply = () => {
       const ios = (navigator as Navigator & { standalone?: boolean }).standalone === true;
       const portrait = window.matchMedia("(orientation: portrait)").matches;
-      if (ios && portrait && screen.height > window.innerHeight) root.style.setProperty("--app-h", `${screen.height}px`);
-      else root.style.removeProperty("--app-h");
+      if (ios && portrait && screen.height - window.innerHeight > 20) root.style.setProperty("--nav-pad", "0px");
+      else root.style.removeProperty("--nav-pad");
     };
     apply();
     window.addEventListener("resize", apply);
@@ -129,7 +130,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <AuthContext value={{ user, logout }}>
       {/* Header, page and tab bar are three rows of one full-screen column. Only the middle row scrolls, so the
           bars never move with the page (no sticky/fixed bars to drift when the phone's browser bars change). */}
-      <div className="app-frame fixed inset-x-0 top-0 flex flex-col" style={{ height: "var(--app-h, 100%)" }}>
+      <div className="app-frame fixed inset-0 flex flex-col">
         <AppHeader onAdd={() => setAdding(true)} />
         <div id="app-scroll" ref={scroller} className="app-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <main className="mx-auto w-full max-w-xl px-4 pt-4 pb-8">
@@ -137,7 +138,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             {children}
           </main>
         </div>
-        <nav className="shrink-0 border-t border-line bg-card pb-[env(safe-area-inset-bottom)]">
+        <nav className="shrink-0 border-t border-line bg-bg pb-[var(--nav-pad,env(safe-area-inset-bottom))]">
           <ul className="mx-auto flex max-w-xl">
             {NAV.map((n) => {
               const active = n.href === "/" ? path === "/" : path.startsWith(n.href);
