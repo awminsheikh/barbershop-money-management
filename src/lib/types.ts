@@ -31,8 +31,19 @@ export interface Appointment {
   saleId?: number;
 }
 
+export interface Product {
+  id?: number;
+  name: string;
+  costPrice: number;
+  price: number;
+  stock: number;
+  lowStockAt: number;
+  active: boolean;
+}
+
 export interface SaleItem {
   serviceId?: number;
+  productId?: number;
   name: string;
   price: number;
   qty: number;
@@ -46,6 +57,8 @@ export interface Sale {
   discount: number;
   tip: number;
   deposit: number;
+  // VAT charged on top of (services - discount); 0 when the option is off.
+  vat?: number;
   method: PaymentMethod;
   appointmentId?: number;
   voided: boolean;
@@ -63,6 +76,19 @@ export interface Expense {
   categoryId?: number;
   amount: number;
   note?: string;
+  recurringId?: number;
+}
+
+export interface RecurringExpense {
+  id?: number;
+  categoryId?: number;
+  amount: number;
+  note?: string;
+  // Jalali day of month (1-31); short months use their last day.
+  day: number;
+  active: boolean;
+  // Month index (jalali year * 12 + month - 1) up to which expenses were generated.
+  lastGenerated: number;
 }
 
 export interface SettingRow {
@@ -86,5 +112,5 @@ export const STATUS_LABEL: Record<AppointmentStatus, string> = {
 export const saleSubtotal = (s: Pick<Sale, "items">) =>
   s.items.reduce((sum, i) => sum + i.price * i.qty, 0);
 
-export const saleTotal = (s: Pick<Sale, "items" | "discount" | "tip">) =>
-  saleSubtotal(s) - s.discount + s.tip;
+export const saleTotal = (s: Pick<Sale, "items" | "discount" | "tip"> & { vat?: number }) =>
+  saleSubtotal(s) - s.discount + (s.vat ?? 0) + s.tip;

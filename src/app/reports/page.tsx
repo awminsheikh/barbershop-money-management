@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { Button, Card, Empty, PageHeader, Segmented, Stat } from "@/components/ui";
 import {
   addDays,
@@ -9,6 +9,8 @@ import {
   formatDayMonth,
   formatMonth,
   formatTime,
+  fromJ,
+  JALALI_MONTHS,
   monthRange,
   startOfDay,
   toFa,
@@ -16,12 +18,14 @@ import {
   weekRange,
 } from "@/lib/date";
 import { useById, useCustomers, useExpenseCategories, useExpenses, useSales } from "@/lib/hooks";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, unitLabel } from "@/lib/money";
+import { buildLedgerCsv } from "@/lib/csv";
+import { saveFile } from "@/lib/files";
 import { summarize, voidSale } from "@/lib/repo";
 import { useSettings } from "@/lib/settings";
 import { METHOD_LABEL, saleTotal, type PaymentMethod } from "@/lib/types";
 
-type Mode = "day" | "week" | "month";
+type Mode = "day" | "week" | "month" | "year";
 
 function usePeriod(mode: Mode, offset: number) {
   return useMemo(() => {
@@ -35,6 +39,10 @@ function usePeriod(mode: Mode, offset: number) {
       return { ...w, label: `هفته از ${formatDayMonth(w.from)}` };
     }
     const { jy, jm } = toJ(today);
+    if (mode === "year") {
+      const y = jy + offset;
+      return { from: fromJ(y, 1, 1).getTime(), to: fromJ(y + 1, 1, 1).getTime(), label: `سال ${toFa(y)}` };
+    }
     const idx = jy * 12 + (jm - 1) + offset;
     const y = Math.floor(idx / 12);
     const m = (idx % 12) + 1;
@@ -63,11 +71,25 @@ export default function ReportsPage() {
     return [...totals.entries()].map(([name, amount]) => ({ name, amount })).sort((a, b) => b.amount - a.amount);
   }, [expenses, categories]);
 
+  const byMonth = useMemo(() => {
+    const months = Array.from({ length: 12 }, () => ({ income: 0, expenses: 0 }));
+    for (const s of sales) if (!s.voided) months[toJ(s.date).jm - 1].income += saleTotal(s) - (s.vat ?? 0);
+    for (const e of expenses) months[toJ(e.date).jm - 1].expenses += e.amount;
+    return months;
+  }, [sales, expenses]);
+
+  const exportCsv = () => {
+    const csv = buildLedgerCsv(sales, expenses, customers, categories, unit);
+    saveFile(new File([csv], `ledger-${label.replace(/\s+/g, "-")}.csv`, { type: "text/csv" }), "گزارش حسابداری");
+  };
+
   const maxService = Math.max(1, ...summary.byService.map((s) => s.amount));
 
   return (
     <>
       <PageHeader title="گزارش‌ها" />
+      <h2 className="mb-2 hidden text-lg font-bold print:block">گزارش الماس · {label}</h2>
+      <div className="no-print">
       <Segmented
         value={mode}
         onChange={(m) => {
@@ -78,9 +100,11 @@ export default function ReportsPage() {
           { value: "day", label: "روز" },
           { value: "week", label: "هفته" },
           { value: "month", label: "ماه" },
+          { value: "year", label: "سال" },
         ]}
       />
-      <div className="my-4 flex items-center justify-between">
+      </div>
+      <div className="no-print my-4 flex items-center justify-between">
         <button type="button" className="min-h-11 min-w-11 text-xl" onClick={() => setOffset(offset - 1)} aria-label="قبل">
           ›
         </button>
@@ -98,7 +122,41 @@ export default function ReportsPage() {
       </div>
       <p className="mb-6 text-sm text-muted">
         شامل انعام {formatMoney(summary.tips, unit)} و پس از کسر تخفیف {formatMoney(summary.discounts, unit)}
+        {summary.vat > 0 && ` · مالیات دریافتی ${formatMoney(summary.vat, unit)} (جدا از درآمد)`}
       </p>
+
+      <div className="no-print mb-6 grid grid-cols-2 gap-3">
+        <Button variant="secondary" onClick={exportCsv}>
+          خروجی اکسل (CSV)
+        </Button>
+        <Button variant="secondary" onClick={() => window.print()}>
+          چاپ / PDF
+        </Button>
+      </div>
+
+      {mode === "year" && (
+        <Card className="mb-4 space-y-2">
+          <h2 className="font-semibold">به تفکیک ماه ({unitLabel(unit)})</h2>
+          <div className="grid grid-cols-[4.5rem_1fr_1fr_1fr] gap-x-2 gap-y-1 text-sm">
+            <span />
+            <span className="text-xs text-muted">درآمد</span>
+            <span className="text-xs text-muted">هزینه</span>
+            <span className="text-xs text-muted">سود</span>
+            {byMonth.map((m, i) => {
+              const profit = m.income - m.expenses;
+              const quiet = (v: number) => (v === 0 ? "text-muted" : "");
+              return (
+                <Fragment key={i}>
+                  <span>{JALALI_MONTHS[i]}</span>
+                  <span className={quiet(m.income)}>{m.income ? formatMoney(m.income, unit, false) : "—"}</span>
+                  <span className={quiet(m.expenses)}>{m.expenses ? formatMoney(m.expenses, unit, false) : "—"}</span>
+                  <span className={profit < 0 ? "text-bad" : quiet(profit)}>{profit ? formatMoney(profit, unit, false) : "—"}</span>
+                </Fragment>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       <Card className="mb-4 space-y-2">
         <h2 className="font-semibold">روش پرداخت</h2>
@@ -161,7 +219,7 @@ export default function ReportsPage() {
               {!s.voided && (
                 <Button
                   variant="ghost"
-                  className="mt-1 w-full text-bad"
+                  className="no-print mt-1 w-full text-bad"
                   onClick={() => {
                     if (confirm("این فروش باطل شود؟ در حساب‌ها حساب نمی‌شود.")) voidSale(s.id!);
                   }}

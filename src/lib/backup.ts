@@ -1,8 +1,19 @@
 import { db } from "./db";
 import { hhmm } from "./date";
+import { saveFile } from "./files";
 import { setSetting } from "./settings";
 
-const TABLES = ["services", "customers", "appointments", "sales", "expenseCategories", "expenses", "settings"] as const;
+const TABLES = [
+  "services",
+  "customers",
+  "appointments",
+  "sales",
+  "expenseCategories",
+  "expenses",
+  "settings",
+  "products",
+  "recurringExpenses",
+] as const;
 
 export async function exportBackup() {
   const data: Record<string, unknown[]> = {};
@@ -13,23 +24,7 @@ export async function exportBackup() {
   const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}-${hhmm(now).replace(":", "")}`;
   const file = new File([json], `barbershop-backup-${stamp}.json`, { type: "application/json" });
 
-  // On iPhone the share sheet lets him save to Files or iCloud Drive.
-  if (navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: "پشتیبان آرایشگاه" });
-      await setSetting("lastBackupAt", Date.now());
-      return;
-    } catch (e) {
-      if ((e as DOMException).name === "AbortError") return;
-    }
-  }
-  const url = URL.createObjectURL(file);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = file.name;
-  a.click();
-  URL.revokeObjectURL(url);
-  await setSetting("lastBackupAt", Date.now());
+  if (await saveFile(file, "پشتیبان آرایشگاه")) await setSetting("lastBackupAt", Date.now());
 }
 
 export async function importBackup(json: string) {

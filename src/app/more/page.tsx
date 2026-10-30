@@ -3,6 +3,7 @@ import { Card, PageHeader } from "@/components/ui";
 
 const ITEMS = [
   { href: "/reports/", title: "گزارش‌ها", hint: "درآمد، هزینه و سود؛ ابطال فروش" },
+  { href: "/products/", title: "محصولات و موجودی", hint: "فروش محصول، موجودی و هشدار کمبود" },
   { href: "/expenses/", title: "هزینه‌ها", hint: "ثبت و مدیریت هزینه‌ها و دسته‌ها" },
   { href: "/services/", title: "خدمات و قیمت‌ها", hint: "فهرست خدمات، قیمت و مدت" },
   { href: "/settings/", title: "تنظیمات", hint: "واحد پول، ساعت کاری، پیام، رمز، پشتیبان" },

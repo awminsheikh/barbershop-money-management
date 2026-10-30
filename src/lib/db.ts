@@ -4,6 +4,8 @@ import type {
   Customer,
   Expense,
   ExpenseCategory,
+  Product,
+  RecurringExpense,
   Sale,
   Service,
   SettingRow,
@@ -17,6 +19,8 @@ class AppDB extends Dexie {
   expenseCategories!: EntityTable<ExpenseCategory, "id">;
   expenses!: EntityTable<Expense, "id">;
   settings!: EntityTable<SettingRow, "key">;
+  products!: EntityTable<Product, "id">;
+  recurringExpenses!: EntityTable<RecurringExpense, "id">;
 
   constructor() {
     super("barbershop");
@@ -28,6 +32,11 @@ class AppDB extends Dexie {
       expenseCategories: "++id",
       expenses: "++id, date, categoryId",
       settings: "key",
+    });
+    // v2: inventory and recurring expenses.
+    this.version(2).stores({
+      products: "++id",
+      recurringExpenses: "++id",
     });
 
     // Starter data the owner can edit. Prices start at 0 so he enters his own.

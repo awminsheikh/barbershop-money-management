@@ -10,6 +10,8 @@ export const useServices = () => useLiveQuery(() => db.services.toArray(), []) ?
 
 export const useCustomers = () => useLiveQuery(() => db.customers.toArray(), []) ?? [];
 
+export const useProducts = () => useLiveQuery(() => db.products.toArray(), []) ?? [];
+
 export const useExpenseCategories = () => useLiveQuery(() => db.expenseCategories.toArray(), []) ?? [];
 
 export function useAppointments(from: number, to: number) {

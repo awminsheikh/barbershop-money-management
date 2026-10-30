@@ -38,6 +38,18 @@ or moving hosts makes the data look lost (restore from a backup file if that eve
 node scripts/make-webclip.mjs https://yourname.github.io/barbershop/
 ```
 
+## Branding
+
+The logo lives in `design/almas-logo.jpg`. `./scripts/make-icons.sh` (macOS, uses `sips`) crops it into
+`src/assets/logo.png` (in-app header) and the PWA / Home Screen icons in `public/`. The dark theme colors
+in `src/app/globals.css` are taken from the logo.
+
+## Features
+
+Appointments, quick sales, customers, services, products with stock (low-stock warning, restock logged as an
+expense), recurring expenses (rent, salaries; generated when the app opens), optional VAT (kept out of
+income), reports by day/week/month/year, Excel-friendly CSV ledger export and print/PDF, backup and restore.
+
 ## Data and backups
 
 - Money is stored as integer Rial. The Toman/Rial switch only changes how amounts are shown and typed.

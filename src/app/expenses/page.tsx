@@ -5,11 +5,13 @@ import { AmountInput } from "@/components/AmountInput";
 import { JalaliCalendar } from "@/components/JalaliCalendar";
 import { Button, Card, Chip, Empty, Field, PageHeader, Sheet, inputClass } from "@/components/ui";
 import { db } from "@/lib/db";
-import { formatDate, formatMonth, monthRange, startOfDay, toJ } from "@/lib/date";
+import { formatDate, formatMonth, monthRange, normalizeDigits, startOfDay, toFa, toJ } from "@/lib/date";
 import { useById, useExpenseCategories, useExpenses } from "@/lib/hooks";
+import { useLiveQuery } from "dexie-react-hooks";
 import { formatMoney } from "@/lib/money";
 import { useSettings } from "@/lib/settings";
 import type { Expense } from "@/lib/types";
+import { Toggle } from "@/components/ui";
 
 function ExpenseSheet({ expense, onClose }: { expense: Expense | "new" | null; onClose: () => void }) {
   const categories = useExpenseCategories();
@@ -99,6 +101,87 @@ function ExpenseSheet({ expense, onClose }: { expense: Expense | "new" | null; o
   );
 }
 
+function RecurringSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { unit } = useSettings();
+  const rules = useLiveQuery(() => db.recurringExpenses.toArray(), []) ?? [];
+  const categories = useExpenseCategories();
+  const names = useById(categories);
+  const [amount, setAmount] = useState(0);
+  const [categoryId, setCategoryId] = useState<number>();
+  const [day, setDay] = useState(1);
+  const [note, setNote] = useState("");
+
+  const add = async () => {
+    if (amount <= 0) return;
+    const { jy, jm, jd } = toJ(new Date());
+    const current = jy * 12 + jm - 1;
+    // If this month's due day has not come yet, it should still be generated this month.
+    await db.recurringExpenses.add({
+      amount,
+      categoryId,
+      day,
+      note: note.trim() || undefined,
+      active: true,
+      lastGenerated: day <= jd ? current : current - 1,
+    });
+    setAmount(0);
+    setNote("");
+  };
+
+  return (
+    <Sheet open={open} title="هزینه‌های تکراری" onClose={onClose}>
+      <p className="text-sm text-muted">
+        مثل اجاره یا حقوق: هر ماه در روز مشخص‌شده خودکار به هزینه‌ها اضافه می‌شود.
+      </p>
+      {rules.map((r) => (
+        <Card key={r.id} className="space-y-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-semibold">{names.get(r.categoryId as number)?.name ?? "بدون دسته"}</div>
+              <div className="text-sm text-muted">
+                {formatMoney(r.amount, unit)} · روز {toFa(r.day)} هر ماه{r.note ? ` · ${r.note}` : ""}
+              </div>
+            </div>
+          </div>
+          <Toggle checked={r.active} onChange={(v) => db.recurringExpenses.update(r.id!, { active: v })} label="فعال" />
+          <Button
+            variant="danger"
+            className="w-full"
+            onClick={() => {
+              if (confirm("این هزینه تکراری حذف شود؟ هزینه‌های ثبت‌شده باقی می‌مانند.")) db.recurringExpenses.delete(r.id!);
+            }}
+          >
+            حذف
+          </Button>
+        </Card>
+      ))}
+      <Card className="space-y-3">
+        <div className="font-semibold">هزینه تکراری جدید</div>
+        <AmountInput value={amount} onChange={setAmount} />
+        <div className="flex flex-wrap gap-2">
+          {categories.map((c) => (
+            <Chip key={c.id} active={categoryId === c.id} onClick={() => setCategoryId(c.id)}>
+              {c.name}
+            </Chip>
+          ))}
+        </div>
+        <Field label="روز ماه (۱ تا ۳۱)">
+          <input
+            className={inputClass}
+            inputMode="numeric"
+            value={toFa(day)}
+            onChange={(e) => setDay(Math.min(31, Math.max(1, Number(normalizeDigits(e.target.value).replace(/\D/g, "")) || 1)))}
+          />
+        </Field>
+        <input className={inputClass} placeholder="یادداشت (اختیاری)" value={note} onChange={(e) => setNote(e.target.value)} />
+        <Button className="w-full" disabled={amount <= 0} onClick={add}>
+          افزودن
+        </Button>
+      </Card>
+    </Sheet>
+  );
+}
+
 export default function ExpensesPage() {
   const { unit } = useSettings();
   const [view, setView] = useState(() => {
@@ -109,6 +192,7 @@ export default function ExpensesPage() {
   const expenses = useExpenses(from, to);
   const categories = useById(useExpenseCategories());
   const [open, setOpen] = useState<Expense | "new" | null>(null);
+  const [recurringOpen, setRecurringOpen] = useState(false);
   const total = expenses.reduce((t, e) => t + e.amount, 0);
 
   const shift = (delta: number) => {
@@ -131,6 +215,10 @@ export default function ExpensesPage() {
           ‹
         </button>
       </div>
+      <Button variant="secondary" className="mb-4 w-full" onClick={() => setRecurringOpen(true)}>
+        هزینه‌های تکراری (اجاره، حقوق، ...)
+      </Button>
+      <RecurringSheet open={recurringOpen} onClose={() => setRecurringOpen(false)} />
       {expenses.length === 0 ? (
         <Empty>در این ماه هزینه‌ای ثبت نشده است.</Empty>
       ) : (

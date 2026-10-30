@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { generateRecurring } from "@/lib/recurring";
 import { hashPin } from "@/lib/pin";
 import { useSettings } from "@/lib/settings";
 import { toFa } from "@/lib/date";
+import { Logo } from "./Logo";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
@@ -38,6 +40,7 @@ function PinScreen({ pinHash, onUnlock }: { pinHash: string; onUnlock: () => voi
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-6 p-6">
+      <Logo className="h-28 w-auto" />
       <h1 className="text-xl font-bold">رمز ورود را وارد کنید</h1>
       <div className="flex gap-3" aria-label="رمز">
         {[0, 1, 2, 3].map((i) => (
@@ -78,6 +81,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const locked = !settings.ready || (!!settings.pinHash && !unlocked);
+  useEffect(() => {
+    if (!locked) generateRecurring().catch(() => {});
+  }, [locked]);
+
   if (!settings.ready) return <div className="min-h-dvh" />;
   if (settings.pinHash && !unlocked) {
     return <PinScreen pinHash={settings.pinHash} onUnlock={() => setUnlocked(true)} />;
@@ -98,7 +106,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   href={n.href}
                   className={`flex min-h-16 flex-col items-center justify-center gap-0.5 text-xs ${
-                    active ? "font-bold text-brand" : "text-muted"
+                    active ? "font-bold text-accent" : "text-muted"
                   }`}
                 >
                   <span className="text-xl leading-none">{n.icon}</span>

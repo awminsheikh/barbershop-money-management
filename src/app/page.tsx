@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AmountInput } from "@/components/AmountInput";
+import { Logo } from "@/components/Logo";
 import { AppointmentsPanel } from "@/components/AppointmentsPanel";
 import { SaleForm } from "@/components/SaleForm";
 import { Button, Sheet, Stat } from "@/components/ui";
 import { db } from "@/lib/db";
 import { dayRange, formatDate, toFa } from "@/lib/date";
-import { useExpenseCategories, useSummary } from "@/lib/hooks";
+import { useExpenseCategories, useProducts, useSummary } from "@/lib/hooks";
 import { formatMoney } from "@/lib/money";
 import { useSettings } from "@/lib/settings";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -24,6 +25,16 @@ function BackupBanner() {
   return (
     <Link href="/settings/" className="mb-4 block rounded-xl border border-brand bg-brand-soft p-3 text-sm">
       {lastBackupAt ? "بیش از یک هفته از آخرین پشتیبان‌گیری گذشته است." : "هنوز پشتیبان نگرفته‌اید."} برای محافظت از اطلاعات، پشتیبان بگیرید ←
+    </Link>
+  );
+}
+
+function LowStockBanner() {
+  const low = useProducts().filter((p) => p.active && p.stock <= p.lowStockAt);
+  if (low.length === 0) return null;
+  return (
+    <Link href="/products/" className="mb-4 block rounded-xl border border-bad p-3 text-sm">
+      موجودی کم: {low.map((p) => p.name).join("، ")} ←
     </Link>
   );
 }
@@ -72,12 +83,16 @@ export default function HomePage() {
 
   return (
     <>
-      <div className="mb-4">
-        <div className="text-sm text-muted">{formatDate(now)}</div>
-        <h1 className="text-2xl font-bold">امروز</h1>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-sm text-muted">{formatDate(now)}</div>
+          <h1 className="text-2xl font-bold">امروز</h1>
+        </div>
+        <Logo className="h-16 w-auto" />
       </div>
 
       <BackupBanner />
+      <LowStockBanner />
 
       <section className="mb-6">
         <h2 className="mb-2 font-semibold">نوبت‌های امروز</h2>

@@ -13,6 +13,8 @@ export interface Settings {
   workDays: number[];
   slotMinutes: number;
   depositEnabled: boolean;
+  vatEnabled: boolean;
+  vatPercent: number;
   channel: MessageChannel;
   template: string;
   pinHash?: string;
@@ -26,6 +28,8 @@ export const DEFAULT_SETTINGS: Settings = {
   workDays: [0, 1, 2, 3, 4, 5],
   slotMinutes: 30,
   depositEnabled: false,
+  vatEnabled: false,
+  vatPercent: 10,
   channel: "sms",
   template: "سلام {name}، یادآوری نوبت شما: {date} ساعت {time}",
 };

@@ -19,7 +19,7 @@ const plist = `<?xml version="1.0" encoding="UTF-8"?>
     <dict>
       <key>FullScreen</key><true/>
       <key>IsRemovable</key><true/>
-      <key>Label</key><string>آرایشگاه</string>
+      <key>Label</key><string>الماس</string>
       <key>PayloadDescription</key><string>Adds the barbershop app to the Home Screen</string>
       <key>PayloadDisplayName</key><string>Web Clip</string>
       <key>PayloadIdentifier</key><string>com.barbershop.webclip.app</string>
@@ -31,7 +31,7 @@ const plist = `<?xml version="1.0" encoding="UTF-8"?>
       <key>Icon</key><data>${icon}</data>
     </dict>
   </array>
-  <key>PayloadDisplayName</key><string>مدیریت آرایشگاه</string>
+  <key>PayloadDisplayName</key><string>الماس | مدیریت آرایشگاه</string>
   <key>PayloadIdentifier</key><string>com.barbershop.profile</string>
   <key>PayloadRemovalDisallowed</key><false/>
   <key>PayloadType</key><string>Configuration</string>

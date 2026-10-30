@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { formatMoney } from "@/lib/money";
-import { useServices } from "@/lib/hooks";
+import { useById, useProducts, useServices } from "@/lib/hooks";
 import { createSale } from "@/lib/repo";
 import { useSettings } from "@/lib/settings";
 import { METHOD_LABEL, saleSubtotal, saleTotal, type PaymentMethod, type SaleItem } from "@/lib/types";
@@ -19,8 +19,10 @@ export interface SaleInitial {
 }
 
 export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: () => void }) {
-  const { unit } = useSettings();
+  const { unit, vatEnabled, vatPercent } = useSettings();
   const services = useServices().filter((s) => s.active);
+  const products = useProducts().filter((p) => p.active);
+  const productById = useById(useProducts());
   const [customerId, setCustomerId] = useState(initial?.customerId);
   const [items, setItems] = useState<SaleItem[]>(initial?.items ?? []);
   const [discount, setDiscount] = useState(0);
@@ -32,7 +34,8 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
 
   const deposit = initial?.deposit ?? 0;
   const subtotal = saleSubtotal({ items });
-  const total = saleTotal({ items, discount, tip });
+  const vat = vatEnabled ? Math.round(((subtotal - discount) * vatPercent) / 100) : 0;
+  const total = saleTotal({ items, discount, tip, vat });
   const payNow = Math.max(0, total - deposit);
 
   const addService = (id: number) => {
@@ -42,6 +45,19 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
       const i = prev.findIndex((p) => p.serviceId === id);
       if (i >= 0) return prev.map((p, idx) => (idx === i ? { ...p, qty: p.qty + 1 } : p));
       return [...prev, { serviceId: id, name: s.name, price: s.price, qty: 1 }];
+    });
+  };
+
+  const inCart = (productId: number) =>
+    items.filter((i) => i.productId === productId).reduce((t, i) => t + i.qty, 0);
+
+  const addProduct = (id: number) => {
+    const p = products.find((x) => x.id === id);
+    if (!p || inCart(id) >= p.stock) return;
+    setItems((prev) => {
+      const i = prev.findIndex((x) => x.productId === id);
+      if (i >= 0) return prev.map((x, idx) => (idx === i ? { ...x, qty: x.qty + 1 } : x));
+      return [...prev, { productId: id, name: p.name, price: p.price, qty: 1 }];
     });
   };
 
@@ -61,12 +77,12 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
     if (!valid || saving) return;
     setSaving(true);
     await createSale({
-      date: Date.now(),
       customerId,
       items,
       discount,
       tip,
       deposit,
+      vat,
       method,
       appointmentId: initial?.appointmentId,
     });
@@ -90,6 +106,19 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
         </div>
       </div>
 
+      {products.length > 0 && (
+        <div>
+          <div className="mb-1 text-sm text-muted">محصولات</div>
+          <div className="flex flex-wrap gap-2">
+            {products.map((p) => (
+              <Chip key={p.id} disabled={inCart(p.id!) >= p.stock} onClick={() => addProduct(p.id!)}>
+                {p.name} · {toFa(p.stock - inCart(p.id!))}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      )}
+
       {items.length > 0 && (
         <Card className="space-y-3">
           {items.map((item, i) => (
@@ -108,7 +137,8 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
                   <span className="w-8 text-center">{toFa(item.qty)}</span>
                   <button
                     type="button"
-                    className="h-10 w-10 rounded-lg border border-line text-lg"
+                    className="h-10 w-10 rounded-lg border border-line text-lg disabled:opacity-30"
+                    disabled={item.productId !== undefined && item.qty >= (productById.get(item.productId)?.stock ?? 0)}
                     onClick={() => patchItem(i, { qty: item.qty + 1 })}
                     aria-label="اضافه کردن"
                   >
@@ -151,6 +181,12 @@ export function SaleForm({ initial, onDone }: { initial?: SaleInitial; onDone: (
           <span>جمع خدمات</span>
           <span>{formatMoney(subtotal, unit)}</span>
         </div>
+        {vat > 0 && (
+          <div className="flex justify-between text-muted">
+            <span>مالیات بر ارزش افزوده ({toFa(vatPercent)}٪)</span>
+            <span>{formatMoney(vat, unit)}</span>
+          </div>
+        )}
         {deposit > 0 && (
           <div className="flex justify-between text-muted">
             <span>بیعانه پرداخت‌شده</span>

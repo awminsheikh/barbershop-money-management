@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button, Card, Chip, Field, PageHeader, Segmented, Toggle, inputClass } from "@/components/ui";
 import { exportBackup, importBackup } from "@/lib/backup";
-import { formatDate, formatTime, normalizeDigits, WEEKDAYS } from "@/lib/date";
+import { formatDate, formatTime, normalizeDigits, toFa, WEEKDAYS } from "@/lib/date";
 import { hashPin } from "@/lib/pin";
 import { setSetting, useSettings } from "@/lib/settings";
 import type { MessageChannel } from "@/lib/types";
@@ -152,6 +152,25 @@ export default function SettingsPage() {
 
       <Section title="نوبت‌دهی">
         <Toggle checked={s.depositEnabled} onChange={(v) => setSetting("depositEnabled", v)} label="ثبت بیعانه برای نوبت" />
+      </Section>
+
+      <Section title="مالیات بر ارزش افزوده">
+        <Toggle checked={s.vatEnabled} onChange={(v) => setSetting("vatEnabled", v)} label="افزودن مالیات به فروش‌ها" />
+        {s.vatEnabled && (
+          <Field label="درصد مالیات">
+            <input
+              className={inputClass}
+              inputMode="numeric"
+              value={toFa(s.vatPercent)}
+              onChange={(e) =>
+                setSetting("vatPercent", Math.min(100, Number(normalizeDigits(e.target.value).replace(/\D/g, "")) || 0))
+              }
+            />
+          </Field>
+        )}
+        <p className="text-sm text-muted">
+          با فعال بودن، مالیات روی هر فروش (بعد از تخفیف) اضافه و در گزارش جدا نشان داده می‌شود و جزو درآمد حساب نمی‌شود.
+        </p>
       </Section>
 
       <Section title="پیام یادآوری به مشتری">
